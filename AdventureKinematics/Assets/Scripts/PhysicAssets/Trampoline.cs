@@ -5,20 +5,11 @@ using UnityEngine;
 public class Trampoline : MonoBehaviour
 {
     Rigidbody2D TransformItem;
-    public float JumpForse;
-    void Start()
-    {
-        
-    }
+    public float JumpForce;
 
-    
-    void Update()
-    {
-        
-    }
     private void OnCollisionEnter2D(Collision2D other)
     {
-        Vector2 Jump = new Vector2(0, JumpForse);
+        Vector2 Jump = new Vector2(0, JumpForce);
         TransformItem = other.gameObject.GetComponent<Rigidbody2D>();
 
         if (TransformItem)

@@ -14,7 +14,7 @@ public class Laser : MonoBehaviour
     void Start()
     {
         Line = GetComponent<LineRenderer>();
-        Line.SetVertexCount(2);
+        Line.positionCount = 2;
         Line.enabled = false;
 
         Line.useWorldSpace = true;

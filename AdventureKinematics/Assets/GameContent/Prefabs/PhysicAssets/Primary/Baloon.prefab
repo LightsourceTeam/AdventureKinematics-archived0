@@ -10,8 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 5998600854228866800}
   - component: {fileID: 2515317087710000573}
-  - component: {fileID: 4419020297442920346}
   - component: {fileID: 1296392878127411077}
+  - component: {fileID: 3841623817454908516}
+  - component: {fileID: 6321962637928451992}
   m_Layer: 0
   m_Name: Ballon
   m_TagString: Untagged
@@ -84,19 +85,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &4419020297442920346
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6557823128963527378}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e481db3a0b5d0c748a35f47cd07fda1d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
 --- !u!50 &1296392878127411077
 Rigidbody2D:
   serializedVersion: 4
@@ -118,3 +106,37 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!232 &3841623817454908516
+DistanceJoint2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6557823128963527378}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_EnableCollision: 0
+  m_ConnectedRigidBody: {fileID: 0}
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_AutoConfigureConnectedAnchor: 0
+  m_Anchor: {x: 0, y: -0.03}
+  m_ConnectedAnchor: {x: 0, y: 0}
+  m_AutoConfigureDistance: 1
+  m_Distance: 85.99007
+  m_MaxDistanceOnly: 0
+--- !u!114 &6321962637928451992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6557823128963527378}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e481db3a0b5d0c748a35f47cd07fda1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BaloonForce: 50
+  MaxSpeed: 50
+  isOn: 1

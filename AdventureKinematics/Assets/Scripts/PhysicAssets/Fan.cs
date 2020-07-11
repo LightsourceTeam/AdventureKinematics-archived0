@@ -5,7 +5,7 @@ using UnityEngine;
 public class Fan : MonoBehaviour
 {
     Rigidbody2D TransformItem;
-    public float FanForse;
+    public float FanForce;
     
     void Start()
     {
@@ -19,7 +19,7 @@ public class Fan : MonoBehaviour
     }
     private void OnTriggerStay2D(Collider2D other)
     {
-        Vector2 fan = new Vector2(FanForse, 0);
+        Vector2 fan = new Vector2(FanForce, 0);
         TransformItem = other.gameObject.GetComponent<Rigidbody2D>();
 
 

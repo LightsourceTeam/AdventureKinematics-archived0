@@ -2,7 +2,7 @@
 
 public class Weight : MonoBehaviour
 {
-    public float DistanseFromRopeEnd;
+    public float DistanceFromRopeEnd;
     
     public void ConnectToRopeEnd(Rigidbody2D rb)
     {
