@@ -21,7 +21,7 @@ public class Baloon : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isOn)
+        if (isOn && !(Mathf.Abs(MaxSpeed) == 0f))
         {
             MyRigBody.AddForce(Vector2.up * BaloonForce * (MaxSpeed - Mathf.Min(MaxSpeed, Vector2.Dot(MyRigBody.velocity, Vector2.up))) / MaxSpeed);
         }
