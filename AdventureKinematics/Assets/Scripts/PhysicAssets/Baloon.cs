@@ -10,12 +10,9 @@ public class Baloon : MonoBehaviour
     public bool isOn;
 
     private Rigidbody2D MyRigBody;
-    private DistanceJoint2D MyHinge;
 
     void Start()
     {
-        MyHinge = gameObject.GetComponent<DistanceJoint2D>(); 
-        if (!MyHinge) MyHinge = gameObject.AddComponent<DistanceJoint2D>();
         MyRigBody = gameObject.GetComponent<Rigidbody2D>();
     }
 
