@@ -23,7 +23,7 @@ public class Baloon : MonoBehaviour
     {
         if (isOn)
         {
-            MyRigBody.AddForce(Vector2.up * BaloonForce * (MaxSpeed - Mathf.Abs(Vector2.Dot(MyRigBody.velocity, Vector2.up))) / MaxSpeed);
+            MyRigBody.AddForce(Vector2.up * BaloonForce * (MaxSpeed - Mathf.Min(MaxSpeed, Vector2.Dot(MyRigBody.velocity, Vector2.up))) / MaxSpeed);
         }
     }
 }
