@@ -2,17 +2,13 @@
 
 public class RopeCutter : MonoBehaviour
 {
-   
-    void Update()
+
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, transform.forward);
-        if (hit.collider != null)
+        if (collision.gameObject.tag == "Link")
         {
-            if (hit.collider.tag == "Link")
-            {
-                Destroy(hit.collider.gameObject);
-            }
+            HingeJoint2D linkJoint = collision.gameObject.GetComponent<HingeJoint2D>();
+            if (linkJoint) linkJoint.enabled = false;
         }
     }
 }
