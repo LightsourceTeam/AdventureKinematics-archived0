@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5720983335080071838}
   - component: {fileID: 5720983335080071839}
   - component: {fileID: 5176119980600865890}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Link
   m_TagString: Link
   m_Icon: {fileID: 0}
@@ -28,8 +28,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5720983335080071837}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.403, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.1, y: 0.1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -74,7 +74,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 6846375441100319780, guid: 4dbc6c883278dd241ac8882dba62d0f0, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7f93baadb4a9db243adc1728ee222604, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -97,10 +97,10 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 0.1
+  m_Mass: 0.5
   m_LinearDrag: 0.5
   m_AngularDrag: 1
-  m_GravityScale: 1
+  m_GravityScale: 0.2
   m_Material: {fileID: 6200000, guid: 3c89d2cb8a1633d44a0fdea34ab7af59, type: 2}
   m_Interpolate: 0
   m_SleepingMode: 1
@@ -120,8 +120,8 @@ HingeJoint2D:
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
   m_AutoConfigureConnectedAnchor: 0
-  m_Anchor: {x: 0, y: 0.34}
-  m_ConnectedAnchor: {x: 0, y: -0.34}
+  m_Anchor: {x: 0, y: 1.35}
+  m_ConnectedAnchor: {x: 0, y: -1.35}
   m_UseMotor: 0
   m_Motor:
     m_MotorSpeed: 0
@@ -144,5 +144,5 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
-  m_Size: {x: 0.05, y: 1}
+  m_Size: {x: 0.5, y: 3.2}
   m_Direction: 0

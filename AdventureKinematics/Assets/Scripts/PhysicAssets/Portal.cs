@@ -5,27 +5,31 @@ using UnityEngine;
 public class Portal : MonoBehaviour
 {
     public Portal OutPortal;
+    public Switch portalSwitch;
     
     private Transform TItemTransform;
     public List<int> IncomingItems;
-    BoxCollider2D bx;
+    BoxCollider2D PortalCollider;
     void Start()
     {
-        bx = GetComponent<BoxCollider2D>();
+        PortalCollider = GetComponent<BoxCollider2D>();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.tag == "TeleportItem")
+        if (portalSwitch.isChecked)
         {
-
-            if (!IncomingItems.Contains(other.gameObject.GetInstanceID()))
+            if (other.tag == "TeleportItem")
             {
-                TItemTransform = other.gameObject.transform.root;
-                OutPortal.IncomingItems.Add(other.gameObject.GetInstanceID());
-                Teleport();
-            }
 
+                if (!IncomingItems.Contains(other.gameObject.GetInstanceID()))
+                {
+                    TItemTransform = other.gameObject.transform.root;
+                    OutPortal.IncomingItems.Add(other.gameObject.GetInstanceID());
+                    Teleport();
+                }
+
+            }
         }
     }
 

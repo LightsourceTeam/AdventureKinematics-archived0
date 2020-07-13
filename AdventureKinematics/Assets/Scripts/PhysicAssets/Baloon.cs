@@ -7,7 +7,6 @@ public class Baloon : MonoBehaviour
 {
     public float BaloonForce;
     public float MaxSpeed = 50f;
-    public bool isOn;
 
     private Rigidbody2D MyRigBody;
 
@@ -18,7 +17,7 @@ public class Baloon : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isOn && !(MaxSpeed == 0f))
+        if (!(MaxSpeed == 0f))
         {
             MyRigBody.AddForce(Vector2.up * BaloonForce * (MaxSpeed - Mathf.Min(MaxSpeed, Vector2.Dot(MyRigBody.velocity, Vector2.up))) / MaxSpeed);
         }

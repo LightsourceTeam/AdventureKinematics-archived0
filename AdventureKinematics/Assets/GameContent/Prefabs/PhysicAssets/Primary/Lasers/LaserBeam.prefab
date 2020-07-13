@@ -11,8 +11,9 @@ GameObject:
   - component: {fileID: 8674794105725194650}
   - component: {fileID: 3618023848236753455}
   - component: {fileID: 7217799430621528098}
+  - component: {fileID: 5576406594140346848}
   m_Layer: 0
-  m_Name: Laser
+  m_Name: LaserBeam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -141,7 +142,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   LineLength: 10
-  isOn: 1
+  laserSwitch: {fileID: 5576406594140346848}
   layerMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &5576406594140346848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200975712606733220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb00194c747e46c4f9247acfadfad675, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isChecked: 1

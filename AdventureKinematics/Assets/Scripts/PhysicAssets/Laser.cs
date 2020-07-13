@@ -5,7 +5,7 @@ using UnityEngine;
 public class Laser : MonoBehaviour
 {
     public float LineLength = 5f;
-    public bool isOn = false;
+    public Switch laserSwitch;
     public LayerMask layerMask;
 
     private RaycastHit2D hit;
@@ -22,7 +22,7 @@ public class Laser : MonoBehaviour
 
     void Update()
     {
-        if (isOn)
+        if (laserSwitch.isChecked)
         {
             Fire();
             return;

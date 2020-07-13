@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3881279081359847243}
   - component: {fileID: 3881279081359847242}
   - component: {fileID: 3881279081359847245}
+  - component: {fileID: 2565761619800637798}
   m_Layer: 0
   m_Name: Fan
   m_TagString: Untagged
@@ -132,6 +133,19 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &2565761619800637798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3881279081359847244}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb00194c747e46c4f9247acfadfad675, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isChecked: 0
 --- !u!1 &3881279082501818884
 GameObject:
   m_ObjectHideFlags: 0
@@ -202,4 +216,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 253fcfd23dec21546853b4dd7479cff9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FanForse: 15
+  FanForce: 0
+  FanSwitch: {fileID: 2565761619800637798}

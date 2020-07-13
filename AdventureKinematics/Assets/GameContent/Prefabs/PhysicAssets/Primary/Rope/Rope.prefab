@@ -27,10 +27,10 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4117987334284596992}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.29, y: 4.02, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
-  - {fileID: 8521658914042181115}
+  - {fileID: 1709735596370027455}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -73,8 +73,8 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: 6269512508327722973, guid: 4dbc6c883278dd241ac8882dba62d0f0, type: 3}
+  m_SortingOrder: 1
+  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -118,11 +118,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 739028b6d178adf48ae26f8e1cb45837, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Hook: {fileID: 8521658914042181113}
+  Hook: {fileID: 1709735596370027453}
   LinkPrefab: {fileID: 5720983335080071837, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
   Links: 7
   weight: {fileID: 0}
---- !u!1001 &4117987335095117671
+  OffsetDistanceFromWeight: 0.025
+  WeightAnchor: {x: 0, y: 0}
+  AutoConfigureWeightConnectedAnchor: 0
+  WeightConnectedAnchor: {x: 0, y: -1.35}
+--- !u!1001 &6403898215289680163
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -135,7 +139,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.34
+      value: -0.135
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_LocalPosition.z
@@ -143,15 +147,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_LocalRotation.w
@@ -178,26 +182,22 @@ PrefabInstance:
       value: Hook
       objectReference: {fileID: 0}
     - target: {fileID: 5720983335080071839, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
-      propertyPath: m_Anchor.y
-      value: 0.34
-      objectReference: {fileID: 0}
-    - target: {fileID: 5720983335080071839, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
-      propertyPath: m_Anchor.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5720983335080071839, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
       propertyPath: m_ConnectedRigidBody
       value: 
       objectReference: {fileID: 4117987334284596999}
+    - target: {fileID: 5720983335080071839, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
+      propertyPath: m_ConnectedAnchor.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
---- !u!4 &8521658914042181115 stripped
+--- !u!4 &1709735596370027455 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5720983335080071836, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
-  m_PrefabInstance: {fileID: 4117987335095117671}
+  m_PrefabInstance: {fileID: 6403898215289680163}
   m_PrefabAsset: {fileID: 0}
---- !u!50 &8521658914042181113 stripped
+--- !u!50 &1709735596370027453 stripped
 Rigidbody2D:
   m_CorrespondingSourceObject: {fileID: 5720983335080071838, guid: 7aacd92da973edb4b8e55d1683d6c813, type: 3}
-  m_PrefabInstance: {fileID: 4117987335095117671}
+  m_PrefabInstance: {fileID: 6403898215289680163}
   m_PrefabAsset: {fileID: 0}
