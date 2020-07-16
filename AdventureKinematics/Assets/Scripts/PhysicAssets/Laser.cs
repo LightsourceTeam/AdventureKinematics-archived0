@@ -4,21 +4,16 @@ using UnityEngine;
 
 public class Laser : MonoBehaviour
 {
-    public float LineLength;
+    public float MaxRange;
     public Switch laserSwitch;
     public LayerMask layerMask;
-    public int reflectionCount;
 
-    private Ray2D ray;
-    private RaycastHit2D hit;
-    private Vector2 currentReflectPosition;
-    private Vector2 direction;
     private LineRenderer Line;
 
     void Start()
     {
         Line = GetComponent<LineRenderer>();
-        Line.enabled = false;
+        Line.enabled = true;
 
         Line.useWorldSpace = true;
     }
@@ -27,6 +22,7 @@ public class Laser : MonoBehaviour
     {
         if (laserSwitch.isChecked)
         {
+            Line.enabled = true;
             Fire();
             return;
         }
@@ -36,41 +32,72 @@ public class Laser : MonoBehaviour
 
     private void Fire()
     {
-        Line.positionCount = 1;
-        direction = transform.right;
-        currentReflectPosition = transform.position;
-        hit = Physics2D.Raycast(currentReflectPosition, direction, LineLength, layerMask);
-        Line.enabled = true;
-        float remainingDistance = LineLength;
-        int currentReflectionCount = 0;
 
-        do
+        Vector2 LastRayBeginLocation = transform.position;
+        Vector2 LastRayDirection = transform.right;
+        float RemainingRange = MaxRange;
+        
+        Line.positionCount = 1;
+
+        RaycastHit2D hit = Physics2D.Raycast(LastRayBeginLocation, LastRayDirection, RemainingRange, layerMask);
+
+        if(hit)
         {
-            if (currentReflectionCount > reflectionCount) break;
-            if (hit)
+            // if laser hit object that is not a mirror, then just draw ray and quit
+            if (hit.transform.tag != "Mirror")
             {
                 Line.positionCount += 1;
-                if (hit.transform.gameObject.tag != "Mirror") break;
-
-                Line.SetPosition(Line.positionCount - 2, currentReflectPosition);
-                Line.SetPosition(Line.positionCount - 1, currentReflectPosition + direction * remainingDistance);
-
-                direction = Quaternion.AngleAxis(180, hit.normal) * -direction;
-
-                remainingDistance -= Vector2.Distance(currentReflectPosition, hit.point);
-                if (remainingDistance < 0) break;
-
-                currentReflectPosition = hit.point;
-                currentReflectionCount++;
-
-                hit = Physics2D.Raycast(currentReflectPosition, direction, remainingDistance, layerMask);
+                Line.SetPosition(0, LastRayBeginLocation);
+                Line.SetPosition(1, hit.point);
+                return;
             }
+            // but if object hit by raycast is a mirror, then do reflection stuff;
             else
             {
-                Line.SetPosition(0, transform.position);
-                Line.SetPosition(1, transform.position + transform.right * LineLength);
+                // initialize start point
+                Line.SetPosition(0, LastRayBeginLocation);
+
+                while (hit)
+                {
+
+                    // ----    draw current ray, if it hit something
+
+                    Line.positionCount += 1;
+                    Line.SetPosition(Line.positionCount - 1, hit.point);
+
+                    // if object that we hit is not mirror, there is no sense to reflect further, and so, we quit function
+                    if (hit.transform.tag != "Mirror") return; 
+
+                    
+                    // ----    reflect ray, and throw raycast for it    ----
+
+                    // calculate remaining range on which we will throw raycast.
+                    RemainingRange -= Vector2.Distance(hit.point, LastRayBeginLocation);
+
+                    // if length is negative, there is no sense to draw further, and so, we quit function
+                    if (RemainingRange < 0f) return;
+
+                    // now, the new begin location is in hitpoint,a nd the new direction is a an old vector reflected by normal
+                    LastRayBeginLocation = hit.point;
+                    LastRayDirection = Vector2.Reflect(LastRayDirection, hit.normal);
+
+                    // throw a raycast
+                    hit = Physics2D.Raycast(LastRayBeginLocation + LastRayDirection * 0.05f, LastRayDirection, RemainingRange, layerMask);
+                }
+
+                // if last reflected ray didn't hit anything, draw it using all the remaining range
+                Line.positionCount += 1;
+                Line.SetPosition(Line.positionCount - 1, LastRayBeginLocation + LastRayDirection * RemainingRange);
             }
-        } while (hit);
+        }
+        else
+        {
+            // still, if there were no hits detected at all, 
+            // ray is drawn straight using all the remaining range (which is in fact max range)
+            Line.positionCount += 1;
+            Line.SetPosition(0, LastRayBeginLocation);
+            Line.SetPosition(1, LastRayBeginLocation + LastRayDirection * RemainingRange);
+        }
     }
 }
 

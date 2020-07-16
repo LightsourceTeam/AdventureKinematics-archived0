@@ -212,6 +212,10 @@ PrefabInstance:
       propertyPath: laserSwitch
       value: 
       objectReference: {fileID: 3261836768477531370}
+    - target: {fileID: 7217799430621528098, guid: 1a4471e921e752f478cba7bf465cf426, type: 3}
+      propertyPath: MaxRange
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 8674794105725194650, guid: 1a4471e921e752f478cba7bf465cf426, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

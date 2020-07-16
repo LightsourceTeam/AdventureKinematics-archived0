@@ -141,7 +141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60127f84107c3c44fbb349b5c8662698, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LineLength: 10
+  MaxRange: 100
   laserSwitch: {fileID: 5576406594140346848}
   layerMask:
     serializedVersion: 2

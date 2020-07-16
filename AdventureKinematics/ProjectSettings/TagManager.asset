@@ -7,6 +7,7 @@ TagManager:
   - Portal
   - TeleportItem
   - Link
+  - Mirror
   layers:
   - Default
   - TransparentFX
