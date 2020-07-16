@@ -7,6 +7,7 @@ public class Laser : MonoBehaviour
     public float MaxRange;
     public Switch laserSwitch;
     public LayerMask layerMask;
+    public int reflectionsLimit = 30;
 
     private LineRenderer Line;
 
@@ -54,6 +55,9 @@ public class Laser : MonoBehaviour
 
                 Line.positionCount += 1;
                 Line.SetPosition(Line.positionCount - 1, hit.point);
+                
+                // if reflections count exceeds maximal acceptable number of reflections, quit reflecting
+                if ((Line.positionCount - 1) > reflectionsLimit) return;
 
                 // if object that was hit is not a mirror, there is no sense to reflect further, so - quit function
                 if (hit.transform.tag != "Mirror") return;
