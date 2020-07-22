@@ -7,7 +7,10 @@ public class PlayerController : MonoBehaviour
     public float walkSpeed = 10f;
     public float jumpHeight = 400f;
     public float minJumpAirtime = 0.1f;
-    public Vector2 movement;
+
+    // controller values 
+    public Vector2 leftThumbstickPos;
+    public Vector2 rightThumbstickPos;
 
     private Rigidbody2D rigBody;
     private CapsuleCollider2D CapsuleCollider;
@@ -18,6 +21,8 @@ public class PlayerController : MonoBehaviour
     private float timeSinceLastJump;
     private bool shouldJump = false;
     private bool alreadyJumped = false;
+
+    
 
     void Start()
     {
@@ -39,14 +44,14 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        moveCharacter(movement);
+        moveCharacter(leftThumbstickPos);
         checkForJumping();
     }
 
 
     void moveCharacter(Vector2 direction)
     {
-        movement = new Vector2(Input.GetAxis("Horizontal"), 0);
+        leftThumbstickPos = new Vector2(Input.GetAxis("Horizontal"), 0);
 
         rigBody.AddForce((rigBody.mass * direction * walkSpeed) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed ), ForceMode2D.Impulse);
     }
