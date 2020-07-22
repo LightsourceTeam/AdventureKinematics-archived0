@@ -4,10 +4,8 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - Portal
   - TeleportItem
-  - Link
-  - Mirror
+  - Collectable
   layers:
   - Default
   - TransparentFX
@@ -18,8 +16,8 @@ TagManager:
   - 
   - 
   - RopeElements
-  - 
-  - 
+  - Ground
+  - Player
   - 
   - 
   - 
