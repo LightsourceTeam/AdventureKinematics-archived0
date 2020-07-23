@@ -5,8 +5,10 @@ using UnityEngine.UI;
 
 public class GameInventory : MonoBehaviour
 {
+    public GameObject slotPrefab;
+    public Transform slotParent;
+
     public List<GameInventorySlot> itemSlots;
-    public List<GameObject> invSlots;
     public GameInventorySlot activeSlot;
     public PlayerController controller;
     public int slotsCount;
@@ -15,10 +17,13 @@ public class GameInventory : MonoBehaviour
     void Start()
     {
         itemSlots = new List<GameInventorySlot>(slotsCount);
-        foreach(Transform child in transform)
+        for(int i = 0; i < slotsCount; i++)
         {
-            itemSlots.Add(child.gameObject.GetComponent<GameInventorySlot>());
+            GameObject slot = Instantiate(slotPrefab, slotParent);
+            itemSlots.Add(slot.GetComponent<GameInventorySlot>());
+            slot.SetActive(true);
         }
+        activeSlot = itemSlots[0];
     }
 
     void Update()
@@ -28,26 +33,25 @@ public class GameInventory : MonoBehaviour
 
     public void Pick(GameItem item)
     {
-        short tempSlot = activeSlot.GetComponent<GameInventorySlot>().index;
-        if(itemSlots[tempSlot].item == null)
+        if(activeSlot.item == null)
         {
-            itemSlots[tempSlot].item = item;
-            itemSlots[tempSlot].spriteObject.GetComponent<Image>().sprite = item.sprite;
+            activeSlot.item = item;
+            activeSlot.spriteObject.GetComponent<Image>().sprite = item.sprite;
             item.gameObject.SetActive(false);
         }
     }
 
     public void Drop()
     {
-        short tempSlot = activeSlot.GetComponent<GameInventorySlot>().index;
         Debug.Log("Drop!");
-        if (itemSlots[tempSlot].item != null)
+        if (activeSlot.item != null)
         {
             Debug.Log("Dropped an Item!");
-            itemSlots[tempSlot].item.transform.position = transform.position;
-            itemSlots[tempSlot].item.gameObject.SetActive(true);
-            itemSlots[tempSlot].item = null;
-            itemSlots[tempSlot].spriteObject.GetComponent<Image>().sprite = null;
+
+            activeSlot.item.transform.position = transform.position;
+            activeSlot.item.gameObject.SetActive(true);
+            activeSlot.item = null;
+            activeSlot.spriteObject.GetComponent<Image>().sprite = null;
         }
     }
 }

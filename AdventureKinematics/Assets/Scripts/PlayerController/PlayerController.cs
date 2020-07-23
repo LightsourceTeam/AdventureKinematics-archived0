@@ -38,12 +38,14 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         // ig you press jump button, then player should jump
-        if (trickmotionJoystick.Vertical >= .8) shouldJump = true;
+        if (movementJoystick.Vertical >= .5) shouldJump = true;
         else
         {
             alreadyJumped = false;
             shouldJump = false;         // set it to false, because if you release button, player then will jump if you press the next time
         }
+
+
         // if trickmotionJoystick is swiped down
         if(trickmotionJoystick.Vertical <= -.8)
         {
@@ -68,17 +70,17 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
-        moveCharacter(new Vector2(movementJoystick.Horizontal, 0));
-        checkForJumping();
+        Move();
+        Jump();
     }
 
 
-    void moveCharacter(Vector2 direction)
+    void Move()
     {
-        rigBody.AddForce((rigBody.mass * direction * walkSpeed) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed ), ForceMode2D.Impulse);
+        rigBody.AddForce((rigBody.mass * walkSpeed * (new Vector2(movementJoystick.Horizontal, 0))) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed), ForceMode2D.Impulse);
     }
 
-    void checkForJumping()
+    void Jump()
     {
         // get count of collisions, and collisions themselves, and also get maximal possible index of collisios
         int n = CapsuleCollider.GetContacts(contactPoints);
