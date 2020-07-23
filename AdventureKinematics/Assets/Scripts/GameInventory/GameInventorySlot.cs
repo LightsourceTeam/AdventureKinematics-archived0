@@ -8,7 +8,9 @@ public class GameInventorySlot : MonoBehaviour
 {
     public GameItem item;
     public GameInventory inventorySystem;
-    
+    public GameObject spriteObject;
+    public short index;
+
     public void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("Is Clicked");

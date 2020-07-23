@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class PlayerController : MonoBehaviour
 {
@@ -9,8 +10,11 @@ public class PlayerController : MonoBehaviour
     public float minJumpAirtime = 0.1f;
 
     // controller values 
-    public Vector2 leftThumbstickPos;
-    public Vector2 rightThumbstickPos;
+
+    public Joystick movementJoystick;
+    public Joystick trickmotionJoystick;
+
+    public GameInventory Inventory;
 
     private Rigidbody2D rigBody;
     private CapsuleCollider2D CapsuleCollider;
@@ -34,25 +38,43 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         // ig you press jump button, then player should jump
-        if (Input.GetButton("Jump")) shouldJump = true;
+        if (trickmotionJoystick.Vertical >= .8) shouldJump = true;
         else
         {
             alreadyJumped = false;
             shouldJump = false;         // set it to false, because if you release button, player then will jump if you press the next time
         }
+        // if trickmotionJoystick is swiped down
+        if(trickmotionJoystick.Vertical <= -.8)
+        {
+            foreach(ContactPoint2D contactPoint in contactPoints) {
+                // if collider Object have GameItem Component
+                if (contactPoint.collider)
+                {
+                    if (contactPoint.collider.gameObject.GetComponent<GameItem>())
+                    {
+                        Inventory.Pick(contactPoint.collider.gameObject.GetComponent<GameItem>());
+                        break;
+                    }
+                }
+            }
+        }
+        if (trickmotionJoystick.Horizontal >= .8)
+        {
+            Inventory.Drop();
+        }      
     }
+
 
     void FixedUpdate()
     {
-        moveCharacter(leftThumbstickPos);
+        moveCharacter(new Vector2(movementJoystick.Horizontal, 0));
         checkForJumping();
     }
 
 
     void moveCharacter(Vector2 direction)
     {
-        leftThumbstickPos = new Vector2(Input.GetAxis("Horizontal"), 0);
-
         rigBody.AddForce((rigBody.mass * direction * walkSpeed) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed ), ForceMode2D.Impulse);
     }
 
