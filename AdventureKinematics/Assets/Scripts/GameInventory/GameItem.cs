@@ -4,10 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameItem : MonoBehaviour
-{ 
+{
 
-    public virtual void apply(short joystickState, Vector2 joystickPos)
+    public Sprite sprite;
+
+    public virtual void Apply(short joystickState, Vector2 joystickPos)
     {
 
     }
+
 }
