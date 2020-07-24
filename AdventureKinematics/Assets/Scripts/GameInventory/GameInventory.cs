@@ -33,12 +33,11 @@ public class GameInventory : MonoBehaviour
 
     public void Pick(GameItem item)
     {
-        if(activeSlot.item == null)
-        {
-            activeSlot.item = item;
-            activeSlot.spriteObject.GetComponent<Image>().sprite = item.sprite;
-            item.gameObject.SetActive(false);
-        }
+        if (activeSlot.item != null) Drop();
+
+        activeSlot.item = item;
+        activeSlot.spriteObject.GetComponent<Image>().sprite = item.sprite;
+        item.gameObject.SetActive(false);
     }
 
     public void Drop()

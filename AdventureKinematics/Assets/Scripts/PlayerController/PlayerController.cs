@@ -8,8 +8,9 @@ public class PlayerController : MonoBehaviour
     public float walkSpeed = 10f;
     public float jumpHeight = 400f;
     public float minJumpAirtime = 0.1f;
+    public float acceptableMotionSlope = 45f;
 
-    // controller values 
+    // controller values
 
     public Joystick movementJoystick;
     public Joystick itemJoystick;
@@ -17,6 +18,7 @@ public class PlayerController : MonoBehaviour
     public Joystick ultraJoystick;
 
     public GameInventory Inventory;
+
 
     private Rigidbody2D rigBody;
     private CapsuleCollider2D CapsuleCollider;
@@ -48,21 +50,6 @@ public class PlayerController : MonoBehaviour
         }
 
 
-        // if trickmotionJoystick is swiped down
-        if(pickdropJoystick.Vertical <= -.8)
-        {
-            foreach(ContactPoint2D contactPoint in contactPoints) {
-                // if collider Object have GameItem Component
-                if (contactPoint.collider)
-                {
-                    if (contactPoint.collider.gameObject.GetComponent<GameItem>())
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-
         if (pickdropJoystick.Vertical >= .25)
         {
             Inventory.Drop();
@@ -73,7 +60,6 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         Move();
-        Jump();
     }
 
     public void OnItem(GameItem Item)
@@ -84,37 +70,40 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-
     void Move()
-    {
-        rigBody.AddForce((rigBody.mass * walkSpeed * (new Vector2(movementJoystick.Horizontal, 0))) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed), ForceMode2D.Impulse);
-    }
-
-    void Jump()
     {
         // get count of collisions, and collisions themselves, and also get maximal possible index of collisios
         int n = CapsuleCollider.GetContacts(contactPoints);
         n = Mathf.Min(contactPointsLength, n);
 
-        // if our player should jump, and it's not already jumped
-        if (shouldJump && !alreadyJumped)
+
+        // then check each object it's colliding with
+        for (int i = 0; i < n; i++)
         {
-
-            // then check each object it's colliding with
-            for (int i = 0; i < n; i++)
+            // if the contact point is something like our legs, and not a head, and jump airtime is already longer than minimal acceptable, then:
+            Debug.Log(Mathf.Cos(acceptableMotionSlope * Mathf.Deg2Rad));
+            if (Vector2.Dot(transform.up, contactPoints[i].normal) > Mathf.Cos(acceptableMotionSlope * Mathf.Deg2Rad))
             {
-                // if the contact point is something like our legs, and not a head, and jump airtime is already longer than minimal acceptable, then:
-                if ((Vector2.Dot(transform.up, contactPoints[i].normal) > 0) && ((timeSinceLastJump - Time.time + minJumpAirtime) < 0f))
-                {
-                    // jump
-                    timeSinceLastJump = Time.time;
-                    rigBody.AddForce(transform.up * jumpHeight, ForceMode2D.Impulse);
-                    alreadyJumped = true;
+                // move
+                rigBody.AddForce((rigBody.mass * walkSpeed * (new Vector2(movementJoystick.Horizontal, 0))) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed), ForceMode2D.Impulse);
 
-                    // and break cycle to do not iterate further (for optimizing)
-                    break;
+                // if our player should jump, and it's not already jumped
+                if (shouldJump && !alreadyJumped)
+                {
+
+                    if ((timeSinceLastJump - Time.time + minJumpAirtime) < 0f)
+                    {
+                        // jump
+                        timeSinceLastJump = Time.time;
+                        rigBody.AddForce(transform.up * jumpHeight, ForceMode2D.Impulse);
+                        alreadyJumped = true;
+
+                    }
                 }
+
+                break;
             }
         }
+
     }
 }
