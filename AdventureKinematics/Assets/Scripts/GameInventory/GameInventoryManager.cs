@@ -26,7 +26,7 @@ public class GameInventoryManager : MonoBehaviour
     {
         itemCollider.GetContacts(nearbyItems);
 
-        float bestChoice = 0f;
+        float bestChoice = 0.5f;
         bestChoiceItem = null;
         foreach(Collider2D obj in nearbyItems)
         {

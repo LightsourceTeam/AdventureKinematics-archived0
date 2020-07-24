@@ -165,8 +165,8 @@ MonoBehaviour:
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 1
-  m_CellSize: {x: 50, y: 50}
-  m_Spacing: {x: 20, y: 0}
+  m_CellSize: {x: 100, y: 100}
+  m_Spacing: {x: 40, y: 0}
   m_Constraint: 0
   m_ConstraintCount: 1
 --- !u!114 &5008696244804837838
@@ -523,7 +523,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8139211897700205044}
   m_HandleRect: {fileID: 835513951915067028}
   m_Direction: 0
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -634,11 +634,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5769503189167085093, guid: 6aeda897a5a1b39428b55643cf641d2d, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 50
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 5769503189167085093, guid: 6aeda897a5a1b39428b55643cf641d2d, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 50
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 5769503189167085093, guid: 6aeda897a5a1b39428b55643cf641d2d, type: 3}
       propertyPath: m_AnchorMin.x
