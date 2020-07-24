@@ -48,8 +48,10 @@ public class GameInventory : MonoBehaviour
         {
             Debug.Log("Dropped an Item!");
 
-            activeSlot.item.transform.position = transform.position;
+
             activeSlot.item.gameObject.SetActive(true);
+            activeSlot.item.transform.position = controller.gameObject.transform.position;
+            activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce((new Vector2(controller.pickdropJoystick.Horizontal, controller.pickdropJoystick.Vertical)) * 5, ForceMode2D.Impulse);
             activeSlot.item = null;
             activeSlot.spriteObject.GetComponent<Image>().sprite = null;
         }

@@ -12,7 +12,9 @@ public class PlayerController : MonoBehaviour
     // controller values 
 
     public Joystick movementJoystick;
-    public Joystick trickmotionJoystick;
+    public Joystick itemJoystick;
+    public Joystick pickdropJoystick;
+    public Joystick ultraJoystick;
 
     public GameInventory Inventory;
 
@@ -47,7 +49,7 @@ public class PlayerController : MonoBehaviour
 
 
         // if trickmotionJoystick is swiped down
-        if(trickmotionJoystick.Vertical <= -.8)
+        if(pickdropJoystick.Vertical <= -.8)
         {
             foreach(ContactPoint2D contactPoint in contactPoints) {
                 // if collider Object have GameItem Component
@@ -55,13 +57,13 @@ public class PlayerController : MonoBehaviour
                 {
                     if (contactPoint.collider.gameObject.GetComponent<GameItem>())
                     {
-                        Inventory.Pick(contactPoint.collider.gameObject.GetComponent<GameItem>());
                         break;
                     }
                 }
             }
         }
-        if (trickmotionJoystick.Horizontal >= .8)
+
+        if (pickdropJoystick.Vertical >= .25)
         {
             Inventory.Drop();
         }      
@@ -72,6 +74,14 @@ public class PlayerController : MonoBehaviour
     {
         Move();
         Jump();
+    }
+
+    public void OnItem(GameItem Item)
+    {
+        if(pickdropJoystick.Vertical <= -.25)
+        {
+            Inventory.Pick(Item);
+        }
     }
 
 

@@ -1,19 +1,20 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Lock : MonoBehaviour
 {
-    FixedJoint2D FJ;
-    public GameObject Key;
- 
-    private void OnTriggerEnter2D(Collider2D other)
+    public Switch lockSwitch;
+    [NonSerialized] public FixedJoint2D lockJoint;
+
+    private void Start()
     {
-        
-        FJ = GetComponent<FixedJoint2D>();
-        if (other.gameObject == Key)
-        {
-            Destroy(FJ);
-        }
+        lockJoint = this.GetComponent<FixedJoint2D>();
+    }
+
+    private void Update()
+    {
+        lockJoint.enabled = lockSwitch.isChecked;
     }
 }
