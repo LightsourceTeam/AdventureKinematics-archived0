@@ -486,20 +486,8 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8202571485446607878, guid: beffc99078350e641acb0b3c99f86911, type: 3}
-      propertyPath: m_ReferenceResolution.x
-      value: 960
-      objectReference: {fileID: 0}
-    - target: {fileID: 8202571485446607878, guid: beffc99078350e641acb0b3c99f86911, type: 3}
-      propertyPath: m_ReferenceResolution.y
-      value: 540
-      objectReference: {fileID: 0}
-    - target: {fileID: 8202571485446607878, guid: beffc99078350e641acb0b3c99f86911, type: 3}
       propertyPath: m_ScreenMatchMode
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8202571485446607878, guid: beffc99078350e641acb0b3c99f86911, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8202571485446607879, guid: beffc99078350e641acb0b3c99f86911, type: 3}
       propertyPath: m_RenderMode
@@ -527,7 +515,7 @@ PrefabInstance:
       objectReference: {fileID: 21300000, guid: 48c0d4d6bebaa934384b07aa1e2f8184, type: 3}
     - target: {fileID: 9163928440663900175, guid: beffc99078350e641acb0b3c99f86911, type: 3}
       propertyPath: m_Value
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: beffc99078350e641acb0b3c99f86911, type: 3}
