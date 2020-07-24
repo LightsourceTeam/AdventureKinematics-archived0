@@ -17,14 +17,10 @@ public class PlayerController : MonoBehaviour
     public Joystick pickdropJoystick;
     public Joystick ultraJoystick;
 
-    public GameInventory Inventory;
-
-
     private Rigidbody2D rigBody;
     private CapsuleCollider2D CapsuleCollider;
 
-    private const int contactPointsLength = 30;
-    private ContactPoint2D[] contactPoints = new ContactPoint2D[contactPointsLength];
+    private List<ContactPoint2D> contactPoints;
     
     private float timeSinceLastJump;
     private bool shouldJump = false;
@@ -34,6 +30,7 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        contactPoints = new List<ContactPoint2D>();
         timeSinceLastJump = -minJumpAirtime - 1f;
         rigBody = this.GetComponent<Rigidbody2D>();
         CapsuleCollider = this.GetComponent<CapsuleCollider2D>();
@@ -48,12 +45,7 @@ public class PlayerController : MonoBehaviour
             alreadyJumped = false;
             shouldJump = false;         // set it to false, because if you release button, player then will jump if you press the next time
         }
-
-
-        if (pickdropJoystick.Vertical >= .25)
-        {
-            Inventory.Drop();
-        }      
+ 
     }
 
 
@@ -62,27 +54,17 @@ public class PlayerController : MonoBehaviour
         Move();
     }
 
-    public void OnItem(GameItem Item)
-    {
-        if(pickdropJoystick.Vertical <= -.25)
-        {
-            Inventory.Pick(Item);
-        }
-    }
 
     void Move()
     {
         // get count of collisions, and collisions themselves, and also get maximal possible index of collisios
         int n = CapsuleCollider.GetContacts(contactPoints);
-        n = Mathf.Min(contactPointsLength, n);
-
 
         // then check each object it's colliding with
-        for (int i = 0; i < n; i++)
+        foreach (ContactPoint2D contactPoint in contactPoints)
         {
             // if the contact point is something like our legs, and not a head, and jump airtime is already longer than minimal acceptable, then:
-            Debug.Log(Mathf.Cos(acceptableMotionSlope * Mathf.Deg2Rad));
-            if (Vector2.Dot(transform.up, contactPoints[i].normal) > Mathf.Cos(acceptableMotionSlope * Mathf.Deg2Rad))
+            if (Vector2.Dot(transform.up, contactPoint.normal) > Mathf.Cos(acceptableMotionSlope * Mathf.Deg2Rad))
             {
                 // move
                 rigBody.AddForce((rigBody.mass * walkSpeed * (new Vector2(movementJoystick.Horizontal, 0))) * ((walkSpeed - Mathf.Abs(Vector2.Dot(rigBody.velocity, transform.right))) / walkSpeed), ForceMode2D.Impulse);

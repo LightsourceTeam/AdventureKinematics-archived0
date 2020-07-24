@@ -26,29 +26,23 @@ public class GameInventory : MonoBehaviour
         activeSlot = itemSlots[0];
     }
 
-    void Update()
-    {
-        
-    }
 
-    public void Pick(GameItem item)
-    {
-        if (activeSlot.item != null) Drop();
-
-        activeSlot.item = item;
-        activeSlot.spriteObject.GetComponent<Image>().sprite = item.sprite;
-        item.gameObject.SetActive(false);
-    }
-
-    public void Drop()
+    public void SwitchActiveItem(GameItem item, Vector2 WhereToThrowDroppedItem)
     {
         if (activeSlot.item != null)
         {
             activeSlot.item.gameObject.SetActive(true);
             activeSlot.item.transform.position = controller.gameObject.transform.position;
-            activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce((new Vector2(controller.pickdropJoystick.Horizontal, controller.pickdropJoystick.Vertical)) * 5, ForceMode2D.Impulse);
+            activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(WhereToThrowDroppedItem * 5, ForceMode2D.Impulse);
             activeSlot.item = null;
             activeSlot.spriteObject.GetComponent<Image>().sprite = null;
+        }
+
+        if (item)
+        {
+            activeSlot.item = item;
+            activeSlot.spriteObject.GetComponent<Image>().sprite = item.sprite;
+            item.gameObject.SetActive(false);
         }
     }
 }

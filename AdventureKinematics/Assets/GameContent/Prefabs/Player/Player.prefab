@@ -196,7 +196,6 @@ MonoBehaviour:
   itemJoystick: {fileID: 1051010193248489074}
   pickdropJoystick: {fileID: 2602879932400730284}
   ultraJoystick: {fileID: 7801874948678649881}
-  Inventory: {fileID: 220176031593262970}
 --- !u!50 &7413130500657871983
 Rigidbody2D:
   serializedVersion: 4
@@ -245,7 +244,7 @@ GameObject:
   - component: {fileID: 3945814650002852366}
   - component: {fileID: 237317763012011575}
   - component: {fileID: 3337277764585782372}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: ItemCollider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -295,6 +294,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerController: {fileID: 7413130500657871980}
+  Inventory: {fileID: 220176031593262970}
 --- !u!1001 &8238295572196762815
 PrefabInstance:
   m_ObjectHideFlags: 0

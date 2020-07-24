@@ -12,7 +12,6 @@ public class GameInventorySlot : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log("Is Clicked");
         inventorySystem.activeSlot = this;
     }
 }
