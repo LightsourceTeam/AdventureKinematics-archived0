@@ -235,8 +235,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   slotPrefab: {fileID: 7589913718299537390}
   slotParent: {fileID: 5635369700825032237}
-  itemSlots: []
-  activeSlot: {fileID: 0}
   controller: {fileID: 0}
   slotsCount: 3
 --- !u!1 &6593116746017520624
@@ -523,7 +521,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8139211897700205044}
   m_HandleRect: {fileID: 835513951915067028}
   m_Direction: 0
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:

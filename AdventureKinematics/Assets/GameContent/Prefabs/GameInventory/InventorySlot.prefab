@@ -90,9 +90,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dfc682d0fa4cfd48aec22b38e209c25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  item: {fileID: 0}
   inventorySystem: {fileID: 0}
-  spriteObject: {fileID: 5769503190556187747}
+  previewSpriteObject: {fileID: 5769503190556187747}
 --- !u!114 &5769503189167085089
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -6,9 +7,9 @@ using UnityEngine.EventSystems;
 
 public class GameInventorySlot : MonoBehaviour, IPointerClickHandler
 {
-    public GameItem item;
+    [NonSerialized] public GameItem item;
     public GameInventory inventorySystem;
-    public GameObject spriteObject;
+    public GameObject previewSpriteObject;
 
     public void OnPointerClick(PointerEventData eventData)
     {

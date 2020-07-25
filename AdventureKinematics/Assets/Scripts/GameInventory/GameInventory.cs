@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,9 +9,10 @@ public class GameInventory : MonoBehaviour
 {
     public GameObject slotPrefab;
     public Transform slotParent;
-
-    public List<GameInventorySlot> itemSlots;
-    public GameInventorySlot activeSlot;
+    
+    [NonSerialized] public List<GameInventorySlot> itemSlots;
+    [NonSerialized] public GameInventorySlot activeSlot;
+    
     public PlayerController controller;
     public int slotsCount;
 
@@ -35,13 +38,13 @@ public class GameInventory : MonoBehaviour
             activeSlot.item.transform.position = controller.gameObject.transform.position;
             activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(WhereToThrowDroppedItem * 5, ForceMode2D.Impulse);
             activeSlot.item = null;
-            activeSlot.spriteObject.GetComponent<Image>().sprite = null;
+            activeSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
         }
 
         if (item)
         {
             activeSlot.item = item;
-            activeSlot.spriteObject.GetComponent<Image>().sprite = item.sprite;
+            activeSlot.previewSpriteObject.GetComponent<Image>().sprite = item.sprite;
             item.gameObject.SetActive(false);
         }
     }
