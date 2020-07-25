@@ -6,15 +6,32 @@ using UnityEngine;
 public class Lock : MonoBehaviour
 {
     public Switch lockSwitch;
-    [NonSerialized] public FixedJoint2D lockJoint;
+    public Rigidbody2D ObjectToLock;
+    public bool isBlocked;
 
     private void Start()
     {
-        lockJoint = this.GetComponent<FixedJoint2D>();
+
     }
 
     private void Update()
     {
-        lockJoint.enabled = lockSwitch.isChecked;
+        if(lockSwitch.isChecked != isBlocked)
+        {
+            BlockOrRelease();
+            isBlocked = !isBlocked;
+        }
+    }
+
+    private void BlockOrRelease()
+    {
+        if(lockSwitch.isChecked)
+        {
+            ObjectToLock.bodyType = RigidbodyType2D.Kinematic;
+        }
+        else
+        {
+            ObjectToLock.bodyType = RigidbodyType2D.Dynamic;
+        }
     }
 }
