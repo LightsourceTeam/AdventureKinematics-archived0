@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class Rope : MonoBehaviour
+public class DecorativeRope : MonoBehaviour
 {
     public GameObject StartPoint;
     public GameObject EndPoint;
@@ -12,6 +12,8 @@ public class Rope : MonoBehaviour
     public float segmentLength = 0.25f;
     public float lineWidth = 0.1f;
     public int segmentCount = 35;
+    public int constraintPrecision = 15;
+    public float constraintStiffness = 50f;
 
     [NonSerialized] public Vector2 externalForces = Vector2.zero;
     [NonSerialized] public Vector2 externalImpulses = Vector2.zero;
@@ -55,7 +57,7 @@ public class Rope : MonoBehaviour
 
 
         //CONSTRAINTS
-        for (int i = 0; i < 50; i++) ApplyConstraint();
+        for (int i = 0; i < constraintPrecision; i++) ApplyConstraint();
 
         externalForces = externalImpulses = Vector2.zero;
     }
@@ -79,9 +81,7 @@ public class Rope : MonoBehaviour
     private void ApplyConstraint()
     {
         //Constraint to First Point 
-        RopeSegment firstSegment = ropeSegments[0];
-        firstSegment.posNow = StartPoint.transform.position;
-        ropeSegments[0] = firstSegment;
+        ropeSegments[0].posNow = StartPoint.transform.position;
 
         for (int i = 0; i < segmentCount - 1; i++)
         {
@@ -90,32 +90,26 @@ public class Rope : MonoBehaviour
 
             Vector2 dist = (secondSeg.posNow - firstSeg.posNow);
 
-            float Solver = Mathf.Max(dist.magnitude - segmentLength, 0f);
-            // Solver *= Mathf.Max(1f - (.1f / Mathf.Abs(Solver)), 0.9f);
+            float Solver = (dist.magnitude - segmentLength) * Time.deltaTime * constraintStiffness;
 
             Vector2 changeAmount = dist.normalized * Solver;
             
             if (i != 0)
             {
                 firstSeg.posNow += changeAmount * 0.5f;
-                ropeSegments[i] = firstSeg;
                 secondSeg.posNow -= changeAmount * 0.5f;
-                ropeSegments[i + 1] = secondSeg;
             }
             else
             {
                 secondSeg.posNow -= changeAmount;
-                ropeSegments[i + 1] = secondSeg;
             }
         }
 
         //Constraint to Second Point 
-        RopeSegment endSegment = ropeSegments[ropeSegments.Count - 1];
-        endSegment.posNow = EndPoint.transform.position;
-        ropeSegments[segmentCount - 1] = endSegment;
+        ropeSegments[ropeSegments.Count - 1].posNow = EndPoint.transform.position;
     }
 
-    public struct RopeSegment
+    public class RopeSegment
     {
         public Vector2 posNow;
         public Vector2 posOld;
