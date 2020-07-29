@@ -1,4 +1,4 @@
-﻿using JetBrains.Annotations;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,11 +6,14 @@ using UnityEngine;
 public class GameItem : MonoBehaviour
 {
 
-    public Sprite sprite;
-
-    public virtual void Apply(short joystickState, Vector2 joystickPos)
+    public Sprite previewSprite;
+    [NonSerialized] public GameInventory gameInventory;
+    public bool isFixedUpdate = false;
+    public virtual void Apply(bool joystickState, Vector2 joystickPos)
     {
 
     }
+
+    public virtual void Pick(GameInventory inventory) { gameInventory = inventory; }
 
 }

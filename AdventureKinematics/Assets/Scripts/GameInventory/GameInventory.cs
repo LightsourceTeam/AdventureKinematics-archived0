@@ -13,15 +13,16 @@ public class GameInventory : MonoBehaviour
     [NonSerialized] public List<GameInventorySlot> itemSlots;
     [NonSerialized] public GameInventorySlot activeSlot;
     
-    public PlayerController controller;
+    public PlayerController playerController;
     public int slotsCount;
 
-
-    void Start()
+    public void Init(PlayerController controller)
     {
         itemSlots = new List<GameInventorySlot>(slotsCount);
-        for(int i = 0; i < slotsCount; i++)
+        for (int i = 0; i < slotsCount; i++)
         {
+            playerController = controller;
+            
             GameObject slot = Instantiate(slotPrefab, slotParent);
             itemSlots.Add(slot.GetComponent<GameInventorySlot>());
             slot.SetActive(true);
@@ -29,13 +30,12 @@ public class GameInventory : MonoBehaviour
         activeSlot = itemSlots[0];
     }
 
-
     public void SwitchActiveItem(GameItem item, Vector2 WhereToThrowDroppedItem)
     {
         if (activeSlot.item != null)
         {
             activeSlot.item.gameObject.SetActive(true);
-            activeSlot.item.transform.position = controller.gameObject.transform.position;
+            activeSlot.item.transform.position = playerController.gameObject.transform.position;
             activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(WhereToThrowDroppedItem * 5, ForceMode2D.Impulse);
             activeSlot.item = null;
             activeSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
@@ -44,8 +44,9 @@ public class GameInventory : MonoBehaviour
         if (item)
         {
             activeSlot.item = item;
-            activeSlot.previewSpriteObject.GetComponent<Image>().sprite = item.sprite;
+            activeSlot.previewSpriteObject.GetComponent<Image>().sprite = item.previewSprite;
             item.gameObject.SetActive(false);
+            item.Pick(this);
         }
     }
 }

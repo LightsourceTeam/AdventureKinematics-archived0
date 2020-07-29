@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class SwitchButton : Switch
 {
-    // Start is called before the first frame update
-    private void OnTriggerEnter2D(Collider2D collision)
+    private void OnTriggerStay2D(Collider2D collision)
     {
         isChecked = true;
+        Debug.Log("Collision");
     }
 
     private void OnTriggerExit2D(Collider2D collision)
