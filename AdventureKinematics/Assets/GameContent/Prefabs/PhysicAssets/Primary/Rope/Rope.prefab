@@ -176,7 +176,7 @@ GameObject:
   - component: {fileID: 663644183777815153}
   - component: {fileID: 663644183777815154}
   m_Layer: 0
-  m_Name: DecorativeRope
+  m_Name: Rope
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -317,8 +317,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   StartPoint: {fileID: 663644182316187928}
   EndPoint: {fileID: 663644182492125654}
-  segmentLength: 0.2
+  segmentLength: 0.1
   lineWidth: 0.1
   segmentCount: 20
-  constraintPrecision: 30
-  constraintStiffness: 10
+  constraintFrequency: 20
+  acceptableUnitError: 0.5
+  velocityDamping: 0.85
+  substeppingCoefficient: 1
