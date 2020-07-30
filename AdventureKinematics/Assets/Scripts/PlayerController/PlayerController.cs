@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public AbilityController abilityController;
     public ItemController itemController;
     public GameInventory inventory;
+    public CraftSystem craftController;
     
     [NonSerialized] public Rigidbody2D rigBody;
     [NonSerialized] public CapsuleCollider2D playerCollider;
@@ -30,6 +31,7 @@ public class PlayerController : MonoBehaviour
         inventory.Init(this);
         itemController.Init(this);
         abilityController.Init(this);
+        craftController.Init(this);
     }
 
 }
