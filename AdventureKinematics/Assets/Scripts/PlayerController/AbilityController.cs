@@ -1,26 +1,38 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AbilityController : MonoBehaviour
+public class AbilityController : Controller
 {
-    public PlayerController playerController;
-    public GameInventory inventory;
+    [NonSerialized] public MainController playerController;
     
-    [SerializeField] private Ability ability;
+    [SerializeField] private GameItem ability;
 
     private bool lastJState;
 
     // Initialising Ability Systems
-    public void Init(PlayerController controller)
+    public override void Init(MainController controller)
     {
         playerController = controller;
+        joystick = playerController.ultraJoystick;
 
-        ability.playerController = playerController;
+        if(ability != null) ability.Pick(playerController);
     }
 
-    public void Update() { if (ability != null) { if (!ability.isFixedUpdate) ability.Apply(); } }
+    public void Update()
+    {
+        if (ability != null)
+        {
+            if (!ability.isFixedUpdate)
+            {
+                if (lastJState) ability.Apply(this);
+            }
+        }
 
-    public void FixedUpdate() { if (ability != null) { if (ability.isFixedUpdate) ability.Apply(); } }
+        lastJState = joystick;
+    }
+
+    public void FixedUpdate() { if (ability != null) { if (ability.isFixedUpdate) { if (lastJState) ability.Apply(this); } } }
 
 }

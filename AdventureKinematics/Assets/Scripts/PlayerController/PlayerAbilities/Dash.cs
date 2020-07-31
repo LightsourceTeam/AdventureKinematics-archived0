@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Dash : Ability
+public class Dash : GameItem
 {
     public float DashStrength;
     public float Cooldown;
@@ -14,11 +14,11 @@ public class Dash : Ability
         timeSinceJump -= Cooldown;
     }
 
-    public override void Apply()
+    public override void Apply(Controller controller)
     {
-        if ((playerController.ultraJoystick.Horizontal >= .6 || playerController.ultraJoystick.Horizontal <= -.6) && (playerController.ultraJoystick.Vertical <= .2 && playerController.ultraJoystick.Vertical >= -.2) && timeSinceJump < Time.time)
+        if ((controller.joystick.Horizontal >= .6 || controller.joystick.Horizontal <= -.6) && (controller.joystick.Vertical <= .2 && controller.joystick.Vertical >= -.2) && timeSinceJump < Time.time)
         {
-            playerController.rigBody.AddForce(playerController.ultraJoystick.Direction.normalized * DashStrength, ForceMode2D.Impulse);
+            playerController.rigBody.AddForce(controller.joystick.Direction.normalized * DashStrength, ForceMode2D.Impulse);
             timeSinceJump = Time.time + Cooldown;
         }
     }

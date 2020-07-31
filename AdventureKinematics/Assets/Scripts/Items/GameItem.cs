@@ -6,7 +6,7 @@ using UnityEngine;
 public class GameItem : MonoBehaviour
 {
     public Sprite previewSprite;
-    [NonSerialized] public GameInventory gameInventory;
+    [NonSerialized] public MainController playerController;
     public bool isFixedUpdate = false;
 
     public List<GameItem> craftCreationList;
@@ -14,11 +14,12 @@ public class GameItem : MonoBehaviour
 
     [NonSerialized] public int craftItemCount = 0;
 
-    public virtual void Apply(bool joystickState, Vector2 joystickPos)
+    public virtual void Apply(Controller controller)
     {
 
     }
 
-    public virtual void Pick(GameInventory inventory) { gameInventory = inventory; }
+    public virtual void Pick(MainController controller) { playerController = controller; }
+
 
 }

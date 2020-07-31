@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Analytics;
 
 public class Rope : MonoBehaviour
 {
@@ -15,7 +16,6 @@ public class Rope : MonoBehaviour
 
     public int constraintFrequency = 15;
     public float acceptableUnitError = .005f;
-    public float velocityDamping = .5f;
     public float contraintMinimalPrecision = .5f;
 
     [NonSerialized] public Vector2 externalForces = Vector2.zero;
@@ -35,7 +35,7 @@ public class Rope : MonoBehaviour
 
         for (int i = 0; i < segmentCount; i++)
         {
-            ropeSegments.Add(new RopeSegment(ropeStartPoint, velocityDamping));
+            ropeSegments.Add(new RopeSegment(ropeStartPoint));
             ropeStartPoint -= segmentLength * transform.up;
         }
     }
@@ -64,9 +64,6 @@ public class Rope : MonoBehaviour
         if (contraintMinimalPrecision > 1f) contraintMinimalPrecision = 1f;
         if (contraintMinimalPrecision < 0f) contraintMinimalPrecision = 0f;
 
-        if (velocityDamping > 1f) velocityDamping = 1f;
-        if (velocityDamping < 0f) velocityDamping = 0f;
-
 
         // SIMULATION
         Simulate();
@@ -80,11 +77,10 @@ public class Rope : MonoBehaviour
 
     private void Simulate()
     {
-        externalForces += new Vector2(0f, -9.81f);
+        externalForces += new Vector2(0f, -0.981f);
 
         for (int i = 0; i < segmentCount - 1; i++)
         {
-            ropeSegments[i].Damping = velocityDamping;
             ropeSegments[i].UpdateExternalPosition((externalForces * Time.fixedDeltaTime) + externalImpulses);
         }
 
@@ -96,38 +92,43 @@ public class Rope : MonoBehaviour
         {
             ropeSegments[0].position = StartPoint.transform.position;
 
-            RopeSegment firstSeg = null, secondSeg = null;
-            for (int i = 0; i < segmentCount - 1; i++)
+            RopeSegment prevSeg = null, currSeg = null;
+            for (int i = 1; i < segmentCount; i++)
             {
-                firstSeg = ropeSegments[i];
-                secondSeg = ropeSegments[i + 1];
+                prevSeg = ropeSegments[i - 1];
+                currSeg = ropeSegments[i];
 
-                Vector2 dist = (secondSeg.position - firstSeg.position);
+                Vector2 dist = (prevSeg.position - currSeg.position);
 
-                float Solver = Mathf.Max(dist.magnitude - segmentLength, 0f);
-                Solver *= Mathf.Max(1f - acceptableUnitError, contraintMinimalPrecision);
+                float Solver = dist.magnitude - segmentLength;
+                Solver *= Mathf.Max(1f - Mathf.Abs(acceptableUnitError), contraintMinimalPrecision);
 
                 Vector2 changeAmount = dist.normalized * Solver;
 
-                if (i != 0)
+                if (i != (segmentCount - 1))
                 {
-                    firstSeg.AddContrsintImpulse(changeAmount * 0.5f);
-                    secondSeg.AddContrsintImpulse(-changeAmount * 0.5f);
+                    if (i == 1)
+                    {
+                        currSeg.AddContrsintImpulse(changeAmount);
+                        continue;
+                    }
+
+
+                    prevSeg.AddContrsintImpulse(-changeAmount * 0.5f);
+                    currSeg.AddContrsintImpulse(changeAmount * 0.5f);
+                    continue;
+                }
+                else
+                {
+                    prevSeg.AddContrsintImpulse(-changeAmount);
                     continue;
                 }
 
-                secondSeg.AddContrsintImpulse(-changeAmount);
             }
 
             //Constraint to Second Point 
-            secondSeg.position = EndPoint.transform.position;
+            currSeg.position = EndPoint.transform.position;
 
-            //for (int i = 0; i < segmentCount - 1; i++)
-            //{
-
-            //    // Debug.Log("iteration: " + j + " index: " + i + " constraint:" + ropeSegments[i].contraintImpulse);
-            //    ropeSegments[i].ApplyContrsintImpulse();
-            //}
         }
     }
 
@@ -138,23 +139,18 @@ public class Rope : MonoBehaviour
 
 
         public Vector2 contraintImpulse;
-        public Vector2 generalConstraintImpulse;
 
         public Vector2 velocity;
-        public float Damping;
 
-        public RopeSegment(Vector2 pos, float damping)
+        public RopeSegment(Vector2 pos)
         {
             position = positionOld = pos;
-            contraintImpulse = Vector2.zero;
-            Damping = damping;
+            velocity = Vector2.zero;
         }
 
         public void UpdateExternalPosition(Vector2 impulse)
         {
-            velocity = (position - positionOld) * (1 - Damping);
-            velocity += Vector2.ClampMagnitude(Vector2.ClampMagnitude(velocity, 1f) * Mathf.Max(Vector2.Dot(generalConstraintImpulse,  -velocity.normalized), 0f), velocity.magnitude);
-            generalConstraintImpulse = Vector2.zero;
+            velocity = (position - positionOld);
 
             positionOld = position;
             position += velocity;
@@ -164,14 +160,6 @@ public class Rope : MonoBehaviour
         public void AddContrsintImpulse(Vector2 impulse)
         {
             position += impulse;
-            generalConstraintImpulse += impulse;
-        }
-
-        public void ApplyContrsintImpulse()
-        {
-            position += contraintImpulse;
-            generalConstraintImpulse += contraintImpulse;
-            contraintImpulse = Vector2.zero;
         }
     }
 }

@@ -1,11 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameInventoryManager : MonoBehaviour
+public class PickdropController : MonoBehaviour
 {
-    public PlayerController playerController;
-    public GameInventory Inventory;
+    [NonSerialized] public MainController playerController;
+    [NonSerialized] public GameInventory Inventory;
 
     private List<Collider2D> nearbyItems;
     private GameItem bestChoiceItem;
@@ -14,8 +15,11 @@ public class GameInventoryManager : MonoBehaviour
     private CircleCollider2D itemCollider;
 
     // Start is called before the first frame update
-    void Start()
+    public void Init(MainController controller)
     {
+        playerController = controller;
+        Inventory = controller.inventory;
+
         nearbyItems = new List<Collider2D>();
         itemCollider = GetComponent<CircleCollider2D>();
         lastDirection = playerController.pickdropJoystick.Direction;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DoubleJump : Ability
+public class DoubleJump : GameItem
 {
     public float JumpStrength;
     public float Cooldown;
@@ -14,21 +14,10 @@ public class DoubleJump : Ability
         timeSinceJump -= Cooldown;
     }
 
-    public void Update()
-    {
-        if (playerController)
-        {
-            if (playerController.ultraJoystick.State)
-            {
-                Apply();
-            }
-        }
-    }
-
-    public override void Apply()
+    public override void Apply(Controller controller)
     {     
-        if(playerController.ultraJoystick.Vertical >= .6 && timeSinceJump < Time.time) {
-            playerController.rigBody.AddForce(playerController.ultraJoystick.Direction.normalized * JumpStrength, ForceMode2D.Impulse);
+        if(controller.joystick.Vertical >= .6 && timeSinceJump < Time.time) {
+            playerController.rigBody.AddForce(controller.joystick.Direction.normalized * JumpStrength, ForceMode2D.Impulse);
             timeSinceJump = Time.time + Cooldown;
         }
     }

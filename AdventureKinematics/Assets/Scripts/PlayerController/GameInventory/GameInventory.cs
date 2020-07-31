@@ -13,10 +13,10 @@ public class GameInventory : MonoBehaviour
     [NonSerialized] public List<GameInventorySlot> itemSlots;
     [NonSerialized] public GameInventorySlot activeSlot;
     
-    public PlayerController playerController;
+    public MainController playerController;
     public int slotsCount;
 
-    public void Init(PlayerController controller)
+    public void Init(MainController controller)
     {
         itemSlots = new List<GameInventorySlot>(slotsCount);
         for (int i = 0; i < slotsCount; i++)
@@ -46,7 +46,7 @@ public class GameInventory : MonoBehaviour
             activeSlot.item = item;
             activeSlot.previewSpriteObject.GetComponent<Image>().sprite = item.previewSprite;
             item.gameObject.SetActive(false);
-            item.Pick(this);
+            item.Pick(playerController);
         }
     }
 }

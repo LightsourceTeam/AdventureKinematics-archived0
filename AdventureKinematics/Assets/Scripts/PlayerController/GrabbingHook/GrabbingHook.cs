@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GrabbingHook : MonoBehaviour
 {
-    [SerializeField] private PlayerController playercontroller;
+    [SerializeField] private MainController playercontroller;
     [SerializeField] private float ClimbSpeed;
     [SerializeField] private float DownClimbSpeed;
     [SerializeField] private float MaxHookDistance;

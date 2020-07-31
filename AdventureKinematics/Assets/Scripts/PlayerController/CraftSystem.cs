@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class CraftSystem : MonoBehaviour
 {
-    public PlayerController playerController;
+    public MainController playerController;
     public List<GameItem> itemCreationList;
     public GameItem craftItem;
 
-    public void Init(PlayerController controller) { }
+    public void Init(MainController controller) { }
 
     void Update()
     {

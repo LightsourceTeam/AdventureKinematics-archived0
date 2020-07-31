@@ -243,7 +243,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a812ae5e2aef82f4089a0e44b770dd14, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerController: {fileID: 2477282074298108649}
   inventory: {fileID: 2477282072994366348}
   itemHandler: {fileID: 2477282074163651239}
 --- !u!1 &2477282072909239024
@@ -325,8 +324,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e741cf2aa8bba041bcedd63617b31ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerController: {fileID: 2477282074298108649}
-  inventory: {fileID: 2477282072994366348}
   ability: {fileID: 2477282074637687767}
 --- !u!1 &2477282072994366346
 GameObject:
@@ -579,7 +576,7 @@ GameObject:
   - component: {fileID: 2477282073120358882}
   - component: {fileID: 2477282073120358883}
   m_Layer: 12
-  m_Name: ItemCollider
+  m_Name: PickdropController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -627,8 +624,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 621e5f941b8ce8f46948f023f926e455, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerController: {fileID: 2477282074298108649}
-  Inventory: {fileID: 2477282072994366348}
 --- !u!1 &2477282073372966191
 GameObject:
   m_ObjectHideFlags: 0
@@ -1026,7 +1021,6 @@ MonoBehaviour:
   jumpHeight: 13
   minJumpAirtime: 0.1
   acceptableMotionSlope: 45
-  timeSinceLastJump: 0
 --- !u!1 &2477282074045681011
 GameObject:
   m_ObjectHideFlags: 0
@@ -1670,6 +1664,8 @@ MonoBehaviour:
   abilityController: {fileID: 2477282072982355726}
   itemController: {fileID: 2477282072864344803}
   inventory: {fileID: 2477282072994366348}
+  inventoryManager: {fileID: 0}
+  craftSystem: {fileID: 0}
   movementJoystick: {fileID: 2477282074269572198}
   itemJoystick: {fileID: 2477282073007961704}
   pickdropJoystick: {fileID: 2477282073450971758}
@@ -2025,7 +2021,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 585dc4412ce35e640877d76338e22e22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  previewSprite: {fileID: 0}
   isFixedUpdate: 0
+  craftCreationList: []
+  isCraftable: 0
   JumpStrength: 5
   Cooldown: 3
 --- !u!1 &2477282074643879990
