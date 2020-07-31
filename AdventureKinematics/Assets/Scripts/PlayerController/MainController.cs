@@ -10,7 +10,7 @@ public class MainController : MonoBehaviour
     public AbilityController abilityController;
     public ItemController itemController;
     public GameInventory inventory;
-    public PickdropController pickdropController;
+    public InteractionController interactionController;
     public CraftSystem craftSystem;
 
     [NonSerialized] public Rigidbody2D rigBody;
@@ -20,8 +20,8 @@ public class MainController : MonoBehaviour
 
     public Joystick movementJoystick;
     public Joystick itemJoystick;
-    public Joystick pickdropJoystick;
-    public Joystick ultraJoystick;
+    public Joystick interactionJoystick;
+    public Joystick abilityJoystick;
 
     void Start()
     {
@@ -31,7 +31,7 @@ public class MainController : MonoBehaviour
         movementController.Init(this);
         inventory.Init(this);
         itemController.Init(this);
-        pickdropController.Init(this);
+        interactionController.Init(this);
         abilityController.Init(this);
         // craftSystem.Init(this);          // TODO craft system
     }

@@ -9,6 +9,7 @@ TagManager:
   - Mirror
   - Portal
   - Link
+  - IceMeltingItem
   layers:
   - Default
   - TransparentFX
@@ -22,8 +23,8 @@ TagManager:
   - Ground
   - Player
   - Item
-  - ItemCollider
-  - 
+  - Interactable
+  - Interactor
   - 
   - 
   - 

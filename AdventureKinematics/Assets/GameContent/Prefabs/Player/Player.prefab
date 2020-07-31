@@ -324,7 +324,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e741cf2aa8bba041bcedd63617b31ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ability: {fileID: 2477282074637687767}
+  ability: {fileID: 0}
 --- !u!1 &2477282072994366346
 GameObject:
   m_ObjectHideFlags: 0
@@ -575,8 +575,8 @@ GameObject:
   - component: {fileID: 2477282073120358880}
   - component: {fileID: 2477282073120358882}
   - component: {fileID: 2477282073120358883}
-  m_Layer: 12
-  m_Name: PickdropController
+  m_Layer: 13
+  m_Name: InteractionController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -787,7 +787,7 @@ GameObject:
   - component: {fileID: 2477282073450971756}
   - component: {fileID: 2477282073450971758}
   m_Layer: 5
-  m_Name: Pickdrop Joystick
+  m_Name: Interaction Joystick
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1374,7 +1374,7 @@ GameObject:
   - component: {fileID: 2477282074252766963}
   - component: {fileID: 2477282074252766961}
   m_Layer: 5
-  m_Name: Ultra Joystick
+  m_Name: Ability Joystick
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1593,7 +1593,6 @@ Transform:
   - {fileID: 2477282072864344802}
   - {fileID: 2477282072982355713}
   - {fileID: 2477282074163651236}
-  - {fileID: 2477282074637687766}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1664,12 +1663,12 @@ MonoBehaviour:
   abilityController: {fileID: 2477282072982355726}
   itemController: {fileID: 2477282072864344803}
   inventory: {fileID: 2477282072994366348}
-  inventoryManager: {fileID: 0}
+  interactionController: {fileID: 2477282073120358883}
   craftSystem: {fileID: 0}
   movementJoystick: {fileID: 2477282074269572198}
   itemJoystick: {fileID: 2477282073007961704}
-  pickdropJoystick: {fileID: 2477282073450971758}
-  ultraJoystick: {fileID: 2477282074252766961}
+  interactionJoystick: {fileID: 2477282073450971758}
+  abilityJoystick: {fileID: 2477282074252766961}
 --- !u!50 &2477282074298108630
 Rigidbody2D:
   serializedVersion: 4
@@ -1978,55 +1977,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &2477282074637687764
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2477282074637687766}
-  - component: {fileID: 2477282074637687767}
-  m_Layer: 0
-  m_Name: AbilityList
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2477282074637687766
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2477282074637687764}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.0260894, y: -0.058804512, z: -167.84682}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 2477282074298108651}
-  m_RootOrder: 7
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2477282074637687767
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2477282074637687764}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 585dc4412ce35e640877d76338e22e22, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  previewSprite: {fileID: 0}
-  isFixedUpdate: 0
-  craftCreationList: []
-  isCraftable: 0
-  JumpStrength: 5
-  Cooldown: 3
 --- !u!1 &2477282074643879990
 GameObject:
   m_ObjectHideFlags: 0

@@ -14,10 +14,10 @@ public class DoubleJump : GameItem
         timeSinceJump -= Cooldown;
     }
 
-    public override void Apply(Controller controller)
+    public override void OnEndApply(Controller controller)
     {     
-        if(controller.joystick.Vertical >= .6 && timeSinceJump < Time.time) {
-            playerController.rigBody.AddForce(controller.joystick.Direction.normalized * JumpStrength, ForceMode2D.Impulse);
+        if(timeSinceJump < Time.time) {
+            controller.mainController.rigBody.AddForce(controller.lastDirection * JumpStrength, ForceMode2D.Impulse);
             timeSinceJump = Time.time + Cooldown;
         }
     }

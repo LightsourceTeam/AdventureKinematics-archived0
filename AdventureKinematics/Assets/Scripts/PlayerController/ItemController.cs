@@ -10,8 +10,6 @@ public class ItemController : Controller
 
     public SpriteRenderer itemHandler;
 
-    private bool lastJState;
-
     public override void Init(MainController controller)
     {
         mainController = controller;
@@ -20,22 +18,33 @@ public class ItemController : Controller
         lastJState = joystick.State;
     }
 
-
-    void FixedUpdate() { if (inventory.activeSlot.item != null) { if (inventory.activeSlot.item.isFixedUpdate) Call(); } }
+    void FixedUpdate() 
+    { 
+        if (inventory.activeSlot.item != null) 
+        {
+            if (lastJState)
+            {
+                if (joystick.State) inventory.activeSlot.item.OnFixedApply(this);
+            }
+        }
+    }
   
     void Update()
     {
-        if (inventory.activeSlot.item != null) { if (!inventory.activeSlot.item.isFixedUpdate) Call(); }
+        if (inventory.activeSlot.item != null)
+        {
+            if (lastJState)
+            {
+                if (!joystick.State) inventory.activeSlot.item.OnEndApply(this);
+                else inventory.activeSlot.item.OnApply(this);
+            }
+        }
         else itemHandler.sprite = null;
-
-        lastJState = joystick.State;
     }
 
-
-    void Call()
+    public void LateUpdate()
     {
-       
-        if (lastJState) inventory.activeSlot.item.Apply(this);
-    
+        lastJState = joystick.State;
+        lastDirection = joystick.Direction;
     }
 }

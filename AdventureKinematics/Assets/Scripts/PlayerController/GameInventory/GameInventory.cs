@@ -41,12 +41,6 @@ public class GameInventory : MonoBehaviour
             activeSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
         }
 
-        if (item)
-        {
-            activeSlot.item = item;
-            activeSlot.previewSpriteObject.GetComponent<Image>().sprite = item.previewSprite;
-            item.gameObject.SetActive(false);
-            item.Pick(playerController);
-        }
+        
     }
 }
