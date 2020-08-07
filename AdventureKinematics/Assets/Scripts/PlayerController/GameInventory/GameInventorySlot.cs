@@ -13,6 +13,7 @@ public class GameInventorySlot : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        inventorySystem.activeSlot = this;
+        inventorySystem.selectedSlot = this;
     }
+
 }

@@ -10,9 +10,13 @@ public class MovementController : Controller
     public float minJumpAirtime = 0.1f;
     public float acceptableMotionSlope = 45f;
 
+    [NonSerialized] public float bonusSpeed = 0f;
+    [NonSerialized] public float percentSpeed = 0f;
 
     private Vector2 motionDirection;
     private List<ContactPoint2D> contactPoints;
+
+    private float finalSpeed;
 
     private float timeSinceLastJump;
     private bool shouldJump = false;
@@ -27,11 +31,15 @@ public class MovementController : Controller
         contactPoints = new List<ContactPoint2D>();
         timeSinceLastJump = -minJumpAirtime - 1f;
         motionDirection = new Vector2(joystick.Horizontal, 0);
+
+        lastJState = joystick.State;
+        lastDirection = joystick.Direction;
     }
 
-    private void Update()
+
+    protected override void Update()
     {
-        // ig you press jump button, then player should jump
+        // if you press jump button, then player should jump
         if (joystick.Vertical >= .5) shouldJump = true;
         else
         {
@@ -40,19 +48,17 @@ public class MovementController : Controller
         }
 
         motionDirection = new Vector2(joystick.Horizontal, 0);
+
+        // resetting bonuses
+        bonusSpeed = percentSpeed = 0f;
     }
 
 
-    void FixedUpdate()
-    {
-        Move();
-    }
-
-
-    void Move()
+    protected override void FixedUpdate()
     {
         // get count of collisions, and collisions themselves, and also get maximal possible index of collisios
         int n = mainController.playerCollider.GetContacts(contactPoints);
+        finalSpeed = (walkSpeed + bonusSpeed) * ((100 + percentSpeed) / 100);
 
         // then check each object it's colliding with
         foreach (ContactPoint2D contactPoint in contactPoints)
@@ -61,7 +67,7 @@ public class MovementController : Controller
             if (Vector2.Dot(transform.up, contactPoint.normal) > Mathf.Cos(acceptableMotionSlope * Mathf.Deg2Rad))
             {
                 // move
-                mainController.rigBody.AddForce((mainController.rigBody.mass * walkSpeed * motionDirection) * ((walkSpeed - Mathf.Max(Vector2.Dot(mainController.rigBody.velocity, motionDirection.normalized), 0f)) / walkSpeed), ForceMode2D.Impulse);
+                mainController.rigBody.AddForce((mainController.rigBody.mass * finalSpeed * motionDirection) * ((finalSpeed - Mathf.Max(Vector2.Dot(mainController.rigBody.velocity, motionDirection.normalized), 0f)) / finalSpeed), ForceMode2D.Impulse);
 
                 // if our player should jump, and it's not already jumped
                 if (shouldJump && !alreadyJumped)

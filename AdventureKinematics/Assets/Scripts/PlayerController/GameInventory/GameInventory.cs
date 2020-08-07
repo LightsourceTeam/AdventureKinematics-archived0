@@ -11,9 +11,9 @@ public class GameInventory : MonoBehaviour
     public Transform slotParent;
     
     [NonSerialized] public List<GameInventorySlot> itemSlots;
-    [NonSerialized] public GameInventorySlot activeSlot;
+    [NonSerialized] public GameInventorySlot selectedSlot;
     
-    public MainController playerController;
+    public MainController mainController;
     public int slotsCount;
 
     public void Init(MainController controller)
@@ -21,26 +21,46 @@ public class GameInventory : MonoBehaviour
         itemSlots = new List<GameInventorySlot>(slotsCount);
         for (int i = 0; i < slotsCount; i++)
         {
-            playerController = controller;
+            mainController = controller;
             
             GameObject slot = Instantiate(slotPrefab, slotParent);
             itemSlots.Add(slot.GetComponent<GameInventorySlot>());
             slot.SetActive(true);
         }
-        activeSlot = itemSlots[0];
+        selectedSlot = itemSlots[0];
     }
 
-    public void SwitchActiveItem(GameItem item, Vector2 WhereToThrowDroppedItem)
+    protected void Update()
     {
-        if (activeSlot.item != null)
+        foreach (GameInventorySlot slot in itemSlots)
         {
-            activeSlot.item.gameObject.SetActive(true);
-            activeSlot.item.transform.position = playerController.gameObject.transform.position;
-            activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(WhereToThrowDroppedItem * 5, ForceMode2D.Impulse);
-            activeSlot.item = null;
-            activeSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
+            if  (slot.item != null)
+            {
+                if (mainController.interactionController.joystick.State) slot.item.OnMounted(mainController);
+                else { if (mainController.interactionController.lastJState) slot.item.OnEndMounted(mainController); }
+            }
         }
+    }
 
-        
+    protected void FixedUpdate()
+    {
+        foreach (GameInventorySlot slot in itemSlots)
+        {
+            if (slot.item != null)
+            {
+                if (mainController.interactionController.joystick.State) slot.item.OnFixedMounted(mainController);
+            }
+        }
+    }
+
+    protected void LateUpdate()
+    {
+        foreach (GameInventorySlot slot in itemSlots)
+        {
+            if (slot.item != null)
+            {
+                if (mainController.interactionController.joystick.State) slot.item.OnLateMounted(mainController);
+            }
+        }
     }
 }

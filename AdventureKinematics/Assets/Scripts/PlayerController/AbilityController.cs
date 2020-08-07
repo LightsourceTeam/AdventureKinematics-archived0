@@ -16,18 +16,15 @@ public class AbilityController : Controller
         if(ability != null) ability.mainController = mainController;
     }
 
-    public void FixedUpdate() 
+    protected override void FixedUpdate() 
     { 
         if (ability != null) 
         { 
-            if (lastJState)
-            {
-                if (joystick.State) ability.OnFixedApply(this);
-            }
+            if (lastJState) { if (joystick.State) ability.OnFixedApply(this); }
         } 
     }
 
-    public void Update()
+    protected override void Update()
     {
         if (ability != null)
         {
@@ -37,11 +34,5 @@ public class AbilityController : Controller
                 else ability.OnApply(this);
             }
         }
-    }
-
-    public void LateUpdate()
-    {
-        lastJState = joystick.State;
-        lastDirection = joystick.Direction;
     }
 }

@@ -23,47 +23,56 @@ public class InteractionController : Controller
         lastDirection = joystick.Direction;
     }
 
-    private void FixedUpdate()
+    protected override void FixedUpdate()
     {
         if (lastJState)
         {
             if (bestChoiceItem != null)
             {
-                if (joystick.State) bestChoiceItem.OnFixedInteract(mainController);
+                if (joystick.State) bestChoiceItem.OnFixedTarget(mainController);
             }
         }
     }
 
-    void Update()
+    protected override void Update()
     {
         if (lastJState)
         {
             if (bestChoiceItem != null)
             {
-                if (!joystick.State) { bestChoiceItem.OnEndInteract(mainController); }
-                else bestChoiceItem.OnInteract(mainController);
+                if (!joystick.State) { bestChoiceItem.OnEndTarget(mainController); }
+                else bestChoiceItem.OnTarget(mainController);
             }
             else
             {
-                if (mainController.inventory.activeSlot.item != null)
+                if (mainController.inventory.selectedSlot.item != null)
                 {
                     if (!joystick.State)
                     {
-                        mainController.inventory.activeSlot.item.gameObject.SetActive(true);
-                        mainController.inventory.activeSlot.item.transform.position = mainController.gameObject.transform.position;
-                        mainController.inventory.activeSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(lastDirection * 5, ForceMode2D.Impulse);
-                        mainController.inventory.activeSlot.item = null;
-                        mainController.inventory.activeSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
+                        mainController.inventory.selectedSlot.item.gameObject.SetActive(true);
+                        mainController.inventory.selectedSlot.item.transform.position = mainController.gameObject.transform.position;
+                        mainController.inventory.selectedSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(lastDirection * 5, ForceMode2D.Impulse);
+                        mainController.inventory.selectedSlot.item = null;
+                        mainController.inventory.selectedSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
                     }
                 }
             }
         }
     }
 
-    private void LateUpdate()
+    protected override void LateUpdate()
     {
-        bestChoiceItem = null;
+        base.LateUpdate();
 
+        if (lastJState)
+        {
+            if (bestChoiceItem != null)
+            {
+                if (joystick.State) bestChoiceItem.OnLateTarget(mainController);
+            }
+        }
+
+        bestChoiceItem = null;
         itemCollider.GetContacts(nearbyItems);
         if (nearbyItems.Count != 0)
         {
@@ -80,8 +89,5 @@ public class InteractionController : Controller
                 }
             }
         }
-
-        lastJState = joystick.State;
-        lastDirection = joystick.Direction;
     }
 }

@@ -16,35 +16,30 @@ public class ItemController : Controller
         joystick = mainController.itemJoystick;
 
         lastJState = joystick.State;
+        lastDirection = joystick.Direction;
     }
 
-    void FixedUpdate() 
+    protected override void FixedUpdate() 
     { 
-        if (inventory.activeSlot.item != null) 
+        if (inventory.selectedSlot.item != null) 
         {
             if (lastJState)
             {
-                if (joystick.State) inventory.activeSlot.item.OnFixedApply(this);
+                if (joystick.State) inventory.selectedSlot.item.OnFixedApply(this);
             }
         }
     }
   
-    void Update()
+    protected override void Update()
     {
-        if (inventory.activeSlot.item != null)
+        if (inventory.selectedSlot.item != null)
         {
             if (lastJState)
             {
-                if (!joystick.State) inventory.activeSlot.item.OnEndApply(this);
-                else inventory.activeSlot.item.OnApply(this);
+                if (!joystick.State) inventory.selectedSlot.item.OnEndApply(this);
+                else inventory.selectedSlot.item.OnApply(this);
             }
         }
         else itemHandler.sprite = null;
-    }
-
-    public void LateUpdate()
-    {
-        lastJState = joystick.State;
-        lastDirection = joystick.Direction;
     }
 }
