@@ -1,16 +1,18 @@
-﻿using System;
+﻿using System;            
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class InteractionController : Controller
 {
+    // nearbyItems
+    [NonSerialized] public List<Collider2D> nearbyItems;
+    [NonSerialized] public List<Collider2D> lastNearbyItems;
 
-    private List<Collider2D> nearbyItems;
-    private Interactable bestChoiceItem = null;
+    private Interactable choiceItem = null;
     private CircleCollider2D itemCollider;
-
 
     // Start is called before the first frame update
     public override void Init(MainController controller)
@@ -18,30 +20,73 @@ public class InteractionController : Controller
         mainController = controller;
         joystick = mainController.interactionJoystick;
 
+        // initialisng arrays
         nearbyItems = new List<Collider2D>();
+        lastNearbyItems = new List<Collider2D>();
+        prevNearbyItems = new List<Collider2D>();
+
         itemCollider = GetComponent<CircleCollider2D>();
+        
         lastDirection = joystick.Direction;
+        lastJState = joystick.State;
     }
+
+    protected override void EarlyUpdate()
+    {
+        base.EarlyUpdate();
+
+        lastNearbyItems = new List<Collider2D>(prevNearbyItems);
+
+        choiceItem = null;
+        nearbyItems.Clear();
+        itemCollider.GetContacts(nearbyItems);
+        if (nearbyItems.Count != 0)
+        {
+            float bestChoice = 0.5f;
+
+            foreach (Collider2D obj in nearbyItems)
+            {
+                float ItemLayDirection = Vector2.Dot((obj.transform.position - transform.position).normalized, lastDirection);
+                if (ItemLayDirection > bestChoice)
+                {
+                    bestChoice = ItemLayDirection;
+                    choiceItem = obj.GetComponent<Interactable>();
+                }
+            }
+        }
+    }
+
 
     protected override void FixedUpdate()
     {
+        foreach (Collider2D collider in nearbyItems) collider.GetComponent<Interactable>().OnFixedInteract(mainController);
         if (lastJState)
         {
-            if (bestChoiceItem != null)
+            if (choiceItem != null)
             {
-                if (joystick.State) bestChoiceItem.OnFixedTarget(mainController);
+                if (joystick.State) choiceItem.OnFixedTarget(mainController);
             }
         }
     }
 
     protected override void Update()
     {
+        foreach (Collider2D collider in nearbyItems) collider.GetComponent<Interactable>().OnInteract(mainController);
+
+        foreach(Collider2D colliderOld in lastNearbyItems)
+        { 
+            if(!nearbyItems.Contains(colliderOld))
+            {
+                colliderOld.GetComponent<Interactable>().OnEndInteract(mainController);
+            }
+        }
+
         if (lastJState)
         {
-            if (bestChoiceItem != null)
+            if (choiceItem != null)
             {
-                if (!joystick.State) { bestChoiceItem.OnEndTarget(mainController); }
-                else bestChoiceItem.OnTarget(mainController);
+                if (!joystick.State) { choiceItem.OnEndTarget(mainController); }
+                else choiceItem.OnTarget(mainController);
             }
             else
             {
@@ -64,30 +109,20 @@ public class InteractionController : Controller
     {
         base.LateUpdate();
 
+        foreach (Collider2D collider in nearbyItems) collider.GetComponent<Interactable>().OnLateInteract(mainController);
+
         if (lastJState)
         {
-            if (bestChoiceItem != null)
+            if (choiceItem != null)
             {
-                if (joystick.State) bestChoiceItem.OnLateTarget(mainController);
+                if (joystick.State) choiceItem.OnLateTarget(mainController);
             }
         }
-
-        bestChoiceItem = null;
-        itemCollider.GetContacts(nearbyItems);
-        if (nearbyItems.Count != 0)
-        {
-
-            float bestChoice = 0.5f;
-
-            foreach (Collider2D obj in nearbyItems)
-            {
-                float ItemLayDirection = Vector2.Dot((obj.transform.position - transform.position).normalized, lastDirection);
-                if (ItemLayDirection > bestChoice)
-                {
-                    bestChoice = ItemLayDirection;
-                    bestChoiceItem = obj.GetComponent<Interactable>();
-                }
-            }
-        }
+              
+        prevNearbyItems = new List<Collider2D>(nearbyItems);
     }
+
+    // operational variables
+
+    private List<Collider2D> prevNearbyItems;
 }

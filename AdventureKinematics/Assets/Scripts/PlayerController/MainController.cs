@@ -11,7 +11,7 @@ public class MainController : MonoBehaviour
     public ItemController itemController;
     public GameInventory inventory;
     public InteractionController interactionController;
-    public GameCraftSystem craftSystem;
+    public CraftSystem craftSystem;
 
     [NonSerialized] public Rigidbody2D rigBody;
     [NonSerialized] public CapsuleCollider2D playerCollider;

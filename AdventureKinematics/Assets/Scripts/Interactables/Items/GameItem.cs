@@ -11,18 +11,28 @@ public class GameItem : Interactable
     public Sprite previewSprite;
     public bool isFixed = false;
 
-
-    public List<GameItem> craftCreationList;
-
-    [NonSerialized] public int craftItemCount = 0;
-
     // apply functions
 
+    public virtual void OnFixedApply(Controller controller) { }    
+    
     public virtual void OnApply(Controller controller) { }
 
-    public virtual void OnFixedApply(Controller controller) { }
+    public virtual void OnLateApply(Controller controller) { }
 
     public virtual void OnEndApply(Controller controller) { }
+ 
+    // mounted functions
+
+    public virtual void OnFixedMounted(MainController controller) { }
+    
+    public virtual void OnMounted(MainController controller) { }
+
+    public virtual void OnLateMounted(MainController controller) { }
+
+    public virtual void OnEndMounted(MainController controller) { }
+
+
+    // overriding onEnd Target
 
     public override void OnEndTarget(MainController controller)
     {
@@ -31,15 +41,4 @@ public class GameItem : Interactable
         mainController.inventory.selectedSlot.previewSpriteObject.GetComponent<Image>().sprite = previewSprite;
         gameObject.SetActive(false);
     }
-
-    // mounted functions
-
-    public virtual void OnMounted(MainController controller) { }
-
-    public virtual void OnFixedMounted(MainController controller) { }
-
-    public virtual void OnEndMounted(MainController controller) { }
-
-    public virtual void OnLateMounted(MainController controller) { }
-
 }
