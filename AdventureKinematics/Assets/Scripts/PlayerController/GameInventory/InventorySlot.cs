@@ -5,10 +5,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 
-public class GameInventorySlot : MonoBehaviour, IPointerClickHandler
+public class InventorySlot : MonoBehaviour, IPointerClickHandler
 {
     [NonSerialized] public GameItem item;
-    public GameInventory inventorySystem;
+    public InventoryController inventorySystem;
     public GameObject previewSpriteObject;
 
     public void OnPointerClick(PointerEventData eventData)

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Linq;
 
 public class InteractionController : Controller
 {
@@ -35,7 +34,8 @@ public class InteractionController : Controller
     {
         base.EarlyUpdate();
 
-        lastNearbyItems = new List<Collider2D>(prevNearbyItems);
+        lastNearbyItems.Clear();
+        foreach (Collider2D collider in prevNearbyItems) lastNearbyItems.Add(collider);
 
         choiceItem = null;
         nearbyItems.Clear();
@@ -118,8 +118,9 @@ public class InteractionController : Controller
                 if (joystick.State) choiceItem.OnLateTarget(mainController);
             }
         }
-              
-        prevNearbyItems = new List<Collider2D>(nearbyItems);
+
+        prevNearbyItems.Clear();
+        foreach (Collider2D collider in nearbyItems) prevNearbyItems.Add(collider);
     }
 
     // operational variables

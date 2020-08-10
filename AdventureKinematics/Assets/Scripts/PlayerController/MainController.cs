@@ -9,7 +9,7 @@ public class MainController : MonoBehaviour
     public MovementController movementController;
     public AbilityController abilityController;
     public ItemController itemController;
-    public GameInventory inventory;
+    public InventoryController inventory;
     public InteractionController interactionController;
     public CraftSystem craftSystem;
 

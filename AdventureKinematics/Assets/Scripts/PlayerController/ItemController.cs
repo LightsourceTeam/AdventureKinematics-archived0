@@ -6,7 +6,7 @@ using UnityEngine;
 public class ItemController : Controller
 {
     [NonSerialized] public MainController playerController;
-    public GameInventory inventory;
+    public InventoryController inventory;
 
     public SpriteRenderer itemHandler;
 
