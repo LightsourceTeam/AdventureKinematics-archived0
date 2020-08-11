@@ -6,7 +6,7 @@ using UnityEngine;
 public class ItemController : Controller
 {
     [NonSerialized] public MainController playerController;
-    public InventoryController inventory;
+    [NonSerialized] public InventorySystem inventory;
 
     public SpriteRenderer itemHandler;
 
@@ -14,6 +14,7 @@ public class ItemController : Controller
     {
         mainController = controller;
         joystick = mainController.itemJoystick;
+        inventory = controller.inventorySystem;
 
         lastJState = joystick.State;
         lastDirection = joystick.Direction;
@@ -21,8 +22,9 @@ public class ItemController : Controller
 
     protected override void FixedUpdate() 
     { 
-        if (inventory.selectedSlot.item != null) 
+        if (inventory != null) 
         {
+            Debug.Log("Yak Vze zayebalo");
             if (lastJState)
             {
                 if (joystick.State) inventory.selectedSlot.item.OnFixedApply(this);

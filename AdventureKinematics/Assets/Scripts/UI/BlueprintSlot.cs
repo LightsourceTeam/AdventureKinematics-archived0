@@ -6,13 +6,26 @@ using UnityEngine.EventSystems;
 
 public class BlueprintSlot : MonoBehaviour, IPointerClickHandler
 {
-    [NonSerialized] public InventoryController inventoryController;
+    [NonSerialized] public InventorySystem inventoryController;
 
-    [NonSerialized] public Blueprint originalBbueprint;
+    private Blueprint _originalBlueprint = null;
+    public Blueprint originalBlueprint 
+    { 
+        get { return _originalBlueprint; } 
+        set 
+        { 
+            if(_originalBlueprint == null) 
+            {
+                _originalBlueprint = value;
+                blueprint = value;
+            }
+        } 
+    }
+
     [NonSerialized] public Blueprint blueprint;
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        inventoryController.selectedBlueprintSlot = this;
+        inventoryController.ChangeActiveBlueprint(this);
     }
 }

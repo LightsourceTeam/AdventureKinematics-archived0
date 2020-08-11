@@ -8,16 +8,15 @@ public class SubBlueprintViewer : MonoBehaviour
     public GameObject subBlueprintSlot;
     public Transform subBlueprintParent;
     
-    public InventoryController inventory;
+    public InventorySystem inventory;
     public GameObject blueprintGUI;
     
     public List<ViewedBlueprint> allSubBlueprints = new List<ViewedBlueprint>();
     public List<GameObject> subBlueprintsSlots = new List<GameObject>();
-    public Blueprint test;
 
     public void ExpandBlueprint()
     {
-        //blueprintGUI.gameObject.SetActive(true);
+        blueprintGUI.gameObject.SetActive(true);
 
         subBlueprintsSlots.Clear();
         allSubBlueprints.Clear();
@@ -25,18 +24,18 @@ public class SubBlueprintViewer : MonoBehaviour
         List<int> currentLayerIndicies = new List<int>();
         currentLayerIndicies.Add(0);
 
-        WalkOverSubBlueprints(test, 0, 0, currentLayerIndicies);//inventory.selectedBlueprintSlot.originalBbueprint, 0);
+        WalkOverSubBlueprints(inventory.selectedBlueprintSlot.originalBlueprint, 0, 0, currentLayerIndicies);
 
         foreach (ViewedBlueprint blueprint in allSubBlueprints)
         {
-            //subBlueprintsSlots.Add(Instantiate(subBlueprintSlot, subBlueprintParent));
+            subBlueprintsSlots.Add(Instantiate(subBlueprintSlot, subBlueprintParent));
             Debug.Log(blueprint.blueprint + " index: " + blueprint.index + " parentIndex: " + blueprint.parentIndex + " layerIndex: " + blueprint.layerIndex);
         }
     }
 
     public void CollapseBlueprint()
     {
-        //blueprintGUI.gameObject.SetActive(false);
+        blueprintGUI.gameObject.SetActive(false);
     }
 
     private void WalkOverSubBlueprints(Blueprint currentBlueprint, int layerIndex, int parentIndex, List<int> currentIndicies)

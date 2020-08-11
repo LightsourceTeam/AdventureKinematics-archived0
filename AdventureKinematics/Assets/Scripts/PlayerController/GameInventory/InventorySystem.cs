@@ -5,7 +5,7 @@ using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class InventoryController : MonoBehaviour
+public class InventorySystem : MonoBehaviour
 {
     public GameObject slotPrefab;
     public Transform slotParent;
@@ -16,46 +16,46 @@ public class InventoryController : MonoBehaviour
     [NonSerialized] public List<InventorySlot> fastAccessSlots;
     [NonSerialized] public List<InventorySlot> inventorySlots;
     [NonSerialized] public List<InventorySlot> craftSlots;
-    [NonSerialized] public List<InventorySlot> blueprintSlots;
-    
+    [NonSerialized] public List<BlueprintSlot> blueprintSlots;
+
     [NonSerialized] public InventorySlot selectedSlot;
     [NonSerialized] public BlueprintSlot selectedBlueprintSlot;
 
     private int slotsCount = 20;
 
-    public MainController mainController;
+    [NonSerialized] public MainController mainController;
 
     public void Init(MainController controller)
     {
+        mainController = controller;
+
         fastAccessSlots = new List<InventorySlot>(slotsCount);
         for (int i = 0; i < 4; i++)
         {
-            mainController = controller;
-            
-            GameObject slot = Instantiate(slotPrefab, slotParent);
-            fastAccessSlots.Add(slot.GetComponent<InventorySlot>());
-            slot.SetActive(true);
-        }
-        selectedSlot = fastAccessSlots[0];
-        
+            InventorySlot slot = Instantiate(slotPrefab, slotParent).GetComponent<InventorySlot>();
+            fastAccessSlots.Add(slot);
+            slot.inventorySystem = this;
+            slot.gameObject.SetActive(true);
+        } 
+
         inventorySlots = new List<InventorySlot>(slotsCount);
         for (int i = 0; i < 4; i++)
-        {
-            mainController = controller;
-            
-            GameObject slot = Instantiate(slotPrefab, slotParent);
-            inventorySlots.Add(slot.GetComponent<InventorySlot>());
-            slot.SetActive(true);
+        { 
+            InventorySlot slot = Instantiate(slotPrefab, slotParent).GetComponent<InventorySlot>();
+            inventorySlots.Add(slot);
+            slot.inventorySystem = this;
+            slot.gameObject.SetActive(true);
         }
-        blueprintSlots = new List<InventorySlot>(4);
+
+        blueprintSlots = new List<BlueprintSlot>(4);
         for (int i = 0; i < 4; i++)
         {
-            mainController = controller;
-
             GameObject slot = Instantiate(blueprintPrefab, blueprintParent);
-            blueprintSlots.Add(slot.GetComponent<InventorySlot>());
+            blueprintSlots.Add(slot.GetComponent<BlueprintSlot>());
             slot.SetActive(true);
         }
+
+        selectedSlot = fastAccessSlots[0];
     }
 
     protected void Update()
@@ -90,6 +90,32 @@ public class InventoryController : MonoBehaviour
                 if (mainController.interactionController.joystick.State) slot.item.OnLateMounted(mainController);
             }
         }
+    }
+
+    public void ChangeSlot(InventorySlot invSlot)
+    {
+        InventorySlot tempSlot = invSlot;
+        float minMagnitude = -1;
+
+        foreach(InventorySlot invenSlot in inventorySlots)
+        {
+            if (minMagnitude < 0) minMagnitude = (invenSlot.itemHolder.transform.position - tempSlot.gameObject.transform.position).magnitude;
+            if(minMagnitude > (invenSlot.itemHolder.transform.position - tempSlot.gameObject.transform.position).magnitude)
+            {
+                tempSlot = invenSlot;
+            }
+        }
+
+        InventorySlot T;
+        T = tempSlot;
+        tempSlot.item = invSlot.item;
+        invSlot.item = T.item;
+    }
+
+    public void ChangeActiveBlueprint(BlueprintSlot blueprint)
+    {
+        selectedBlueprintSlot = blueprint;
+        craftSlots.Clear();
     }
 
 }

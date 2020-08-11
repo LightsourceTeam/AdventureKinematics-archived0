@@ -9,9 +9,8 @@ public class MainController : MonoBehaviour
     public MovementController movementController;
     public AbilityController abilityController;
     public ItemController itemController;
-    public InventoryController inventory;
+    public InventorySystem inventorySystem;
     public InteractionController interactionController;
-    public CraftSystem craftSystem;
 
     [NonSerialized] public Rigidbody2D rigBody;
     [NonSerialized] public CapsuleCollider2D playerCollider;
@@ -29,11 +28,10 @@ public class MainController : MonoBehaviour
         playerCollider = GetComponent<CapsuleCollider2D>();
 
         movementController.Init(this);
-        inventory.Init(this);
+        inventorySystem.Init(this);
         itemController.Init(this);
         interactionController.Init(this);
         abilityController.Init(this);
-        // craftSystem.Init(this);          // TODO craft system
     }
 
 }

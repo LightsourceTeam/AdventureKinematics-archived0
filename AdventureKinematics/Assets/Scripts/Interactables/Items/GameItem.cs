@@ -37,8 +37,8 @@ public class GameItem : Interactable
     public override void OnEndTarget(MainController controller)
     {
         mainController = controller;
-        mainController.inventory.selectedSlot.item = this;
-        mainController.inventory.selectedSlot.previewSpriteObject.GetComponent<Image>().sprite = previewSprite;
+        mainController.inventorySystem.selectedSlot.item = this;
+        mainController.inventorySystem.selectedSlot.previewSpriteObject.sprite = previewSprite;
         gameObject.SetActive(false);
     }
 }

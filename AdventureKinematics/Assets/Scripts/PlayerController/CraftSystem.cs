@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CraftSystem : MonoBehaviour
 {
-    GameItem Craft(Blueprint currentBlueprint, List<GameItem> itemCreationList) 
+    public GameItem TryCraft(Blueprint currentBlueprint, List<GameItem> itemCreationList) 
     {
 
         // check if there are no missing craft items

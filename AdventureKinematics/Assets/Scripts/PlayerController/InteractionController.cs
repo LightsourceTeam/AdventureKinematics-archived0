@@ -90,15 +90,15 @@ public class InteractionController : Controller
             }
             else
             {
-                if (mainController.inventory.selectedSlot.item != null)
+                if (mainController.inventorySystem.selectedSlot.item != null)
                 {
                     if (!joystick.State)
                     {
-                        mainController.inventory.selectedSlot.item.gameObject.SetActive(true);
-                        mainController.inventory.selectedSlot.item.transform.position = mainController.gameObject.transform.position;
-                        mainController.inventory.selectedSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(lastDirection * 5, ForceMode2D.Impulse);
-                        mainController.inventory.selectedSlot.item = null;
-                        mainController.inventory.selectedSlot.previewSpriteObject.GetComponent<Image>().sprite = null;
+                        mainController.inventorySystem.selectedSlot.item.gameObject.SetActive(true);
+                        mainController.inventorySystem.selectedSlot.item.transform.position = mainController.gameObject.transform.position;
+                        mainController.inventorySystem.selectedSlot.item.gameObject.GetComponent<Rigidbody2D>().AddForce(lastDirection * 5, ForceMode2D.Impulse);
+                        mainController.inventorySystem.selectedSlot.item = null;
+                        mainController.inventorySystem.selectedSlot.previewSpriteObject.sprite = null;
                     }
                 }
             }
