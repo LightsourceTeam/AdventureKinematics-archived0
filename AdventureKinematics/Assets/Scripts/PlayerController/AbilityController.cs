@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class AbilityController : Controller
 {
-    [SerializeField] private GameItem ability;
+    public GameItem ability;
 
     // Initialising Ability Systems
     public override void Init(MainController controller)
