@@ -24,7 +24,6 @@ public class ItemController : Controller
     { 
         if (inventory != null) 
         {
-            Debug.Log("Yak Vze zayebalo");
             if (lastJState)
             {
                 if (joystick.State) inventory.selectedSlot.item.OnFixedApply(this);

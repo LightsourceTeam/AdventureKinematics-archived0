@@ -7,24 +7,26 @@ public class SubBlueprintViewer : MonoBehaviour
 {
     public GameObject subBlueprintSlot;
     public Transform subBlueprintParent;
+
+    public GameObject subBlueprintArea;
     
     public InventorySystem inventory;
-    public GameObject blueprintGUI;
     
-    public List<ViewedBlueprint> allSubBlueprints = new List<ViewedBlueprint>();
-    public List<GameObject> subBlueprintsSlots = new List<GameObject>();
+    public List<List<ViewedBlueprint>> allSubBlueprints = new List<ViewedBlueprint>();
+    public List<GameObject> subBlueprintsSlots;
+    
 
-    public void ExpandBlueprint()
+    private int lastIndex = 0;
+
+    public void InitBlueprint()
     {
-        blueprintGUI.gameObject.SetActive(true);
+        subBlueprintsSlots = new List<List<GameObject>>();
+        
+        List<GameObject> firstLayer = new List<GameObject>();
+        firstLayer.Add(inventory.selectedBlueprintSlot.originalBlueprint);
+        allSubBlueprints.Add(firstLayer);
 
-        subBlueprintsSlots.Clear();
-        allSubBlueprints.Clear();
-
-        List<int> currentLayerIndicies = new List<int>();
-        currentLayerIndicies.Add(0);
-
-        WalkOverSubBlueprints(inventory.selectedBlueprintSlot.originalBlueprint, 0, 0, currentLayerIndicies);
+        WalkOverSubBlueprints(inventory.selectedBlueprintSlot.originalBlueprint, 0, 0);
 
         foreach (ViewedBlueprint blueprint in allSubBlueprints)
         {
@@ -35,44 +37,69 @@ public class SubBlueprintViewer : MonoBehaviour
 
     public void CollapseBlueprint()
     {
-        blueprintGUI.gameObject.SetActive(false);
+        
     }
 
-    private void WalkOverSubBlueprints(Blueprint currentBlueprint, int layerIndex, int parentIndex, List<int> currentIndicies)
+    private void WalkOverSubBlueprints(Blueprint currentBlueprint, int layerIndex, int parentIndex)
     {
         layerIndex++;               // step over to a new layer
 
         // if there is no such a layer, add one
-        if (currentIndicies.Count <= layerIndex) currentIndicies.Add(0);    
+        if (allSubBlueprints.Count <= layerIndex) allSubBlueprints.Add(new List<ViewedBlueprint>());    
   
             
         foreach (Blueprint blueprint in currentBlueprint.subBlueprints)     // iterate over all the subblueprints in this layer
         {
             // add new item in the layer
-            allSubBlueprints.Add(new ViewedBlueprint(currentIndicies[layerIndex], layerIndex, parentIndex, blueprint)); 
+            allSubBlueprints.Add(new ViewedBlueprint(parentIndex, blueprint)); 
             
             // walk over all the subblueprints in the current blueprint
             WalkOverSubBlueprints(blueprint, layerIndex, currentIndicies[layerIndex], currentIndicies);
 
             // change an index of the current item
             currentIndicies[layerIndex] = currentIndicies[layerIndex] + 1;
+
+            //lastIndex = layerIndex;
         }
     }
 
+
+    public void CreateWindow()
+    {
+        float width = subBlueprintArea.GetComponent<RectTransform>().sizeDelta.x;
+        int y = 0;
+        int x = 0;
+        for (int i = 0; i < lastIndex; i++)
+        {
+            foreach(ViewedBlueprint viewedBlueprint in allSubBlueprints)
+            {
+                y++;
+                x++;
+                if (viewedBlueprint.getLayerIndex == i && allSubBlueprints[y].getLayerIndex != i)
+                {
+                    int j = (100 / x) / 100;
+                    for(int z = 1; z == x; z++)
+                    {
+                        Transform tempTransform.x = subBlueprintArea.GetComponent<RectTransform>().sizeDelta.x / (j * z)
+                        subBlueprintsSlots[y].transform.position.x = tempTransform;
+                    }
+                    x = 0;
+                }
+            }
+        }
+    }
+
+
     public class ViewedBlueprint
     {
-        public ViewedBlueprint(int idx, int layerIdx, int parIdx, Blueprint bp)
+        public Blueprint blueprint;
+        public int parentIndex;
+
+        public ViewedBlueprint(int parIdx, Blueprint bp)
         {
-            index = idx;
-            layerIndex = layerIdx;
             parentIndex = parIdx;
             blueprint = bp;
         }
-        public int index;
-        public int layerIndex;
-        public int parentIndex;
-
-        public Blueprint blueprint;
     }
 
 }
