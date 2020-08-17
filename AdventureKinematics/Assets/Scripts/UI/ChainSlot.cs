@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BlueprintTreeSlot : MonoBehaviour
+public class ChainSlot : MonoBehaviour
 {
     // BlueprintTreeSlot
     public InventorySlot blueprintSlot;

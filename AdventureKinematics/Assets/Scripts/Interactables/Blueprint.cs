@@ -7,7 +7,7 @@ public class Blueprint : MonoBehaviour
     public List<GameItem> craftList;
     public GameItem craftItem;
 
-    public List<Blueprint> subBlueprints;
+    public Blueprint subBlueprint;
     public Blueprint parentBlueprint;
 
     public virtual GameItem Craft()
