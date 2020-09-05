@@ -11,6 +11,8 @@ namespace Server
 {
     public class Client
     {
+       
+        public static Client instance;
         public Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();
         
         public int id;
@@ -49,7 +51,8 @@ namespace Server
             if (currentChannel.type == ChannelType.stream)
             {
                 // receive data
-                byte[] data = Read(channel);
+                byte[] data = new byte[currentChannel.readSize];
+                stream.Read(data, 0, currentChannel.readSize);
                 currentChannel.dataBuffer.Push(data);
             }
             else
@@ -59,7 +62,8 @@ namespace Server
                 int dataSize = BitConverter.ToInt32(dataSizeBytes, 0);
 
                 // receive data
-                byte[] data = Read(channel);
+                byte[] data = new byte[currentChannel.readSize];
+                stream.Read(data, 0, dataSize);
                 currentChannel.dataBuffer.Push(data);
             }
 
@@ -71,7 +75,6 @@ namespace Server
         public byte[] Read(byte channel)
         {
             byte[] data = channels[channel].dataBuffer.Pop();
-            stream.Read(data, 0, channels[channel].readSize);
             return data;
         }
 
