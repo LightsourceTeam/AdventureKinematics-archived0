@@ -35,12 +35,12 @@ namespace Server
             channels.Add(0, new Channel());
 
             // begin data reading
-            stream.BeginRead(recvChannelBytes, 0, 1, Read, null);
+            stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
         }
   
         private byte[] recvChannelBytes = new byte[1];
         private byte[] dataSizeBytes = new byte[4];
-        private void Read(IAsyncResult result)
+        private void onDataIncome(IAsyncResult result)
         {
             // get channel to which we are reading
             stream.EndRead(result);
@@ -51,8 +51,7 @@ namespace Server
             if (currentChannel.type == ChannelType.stream)
             {
                 // receive data
-                byte[] data = new byte[currentChannel.readSize];
-                stream.Read(data, 0, currentChannel.readSize);
+                byte[] data = Read(channel);
                 currentChannel.dataBuffer.Push(data);
             }
             else
@@ -60,16 +59,22 @@ namespace Server
                 // get data size
                 stream.Read(dataSizeBytes, 0, currentChannel.readSize);
                 int dataSize = BitConverter.ToInt32(dataSizeBytes, 0);
-                
+
                 // receive data
-                byte[] data = new byte[dataSize];
-                stream.Read(data, 0, dataSize);
+                byte[] data = Read(channel);
                 currentChannel.dataBuffer.Push(data);
             }
 
             
             // start waiting for the next data
-            stream.BeginRead(recvChannelBytes, 0, 1, Read, null);
+            stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
+        }
+
+        public byte[] Read(byte channel)
+        {
+            byte[] data = channels[channel].dataBuffer.Pop();
+            stream.Read(data, 0, channels[channel].readSize);
+            return data;
         }
 
         private byte[] sendChannelBytes = new byte[1];
