@@ -5,6 +5,8 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace Server
@@ -19,6 +21,8 @@ namespace Server
 
         private TcpClient tcp;
         private NetworkStream stream;
+
+        private Mutex mutex = new Mutex();
 
         // constructor for intitializing new client
         public Client(TcpClient client)
@@ -37,7 +41,7 @@ namespace Server
             // begin data reading
             stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
         }
-  
+          
         private byte[] recvChannelBytes = new byte[1];
         private byte[] dataSizeBytes = new byte[4];
         private void onDataIncome(IAsyncResult result)
@@ -48,9 +52,12 @@ namespace Server
 
 
             Channel currentChannel = channels[channel];
+
+
             if (currentChannel.type == ChannelType.stream)
             {
                 // receive data
+                mutex.WaitOne();
                 byte[] data = new byte[currentChannel.readSize];
                 stream.Read(data, 0, currentChannel.readSize);
                 currentChannel.dataBuffer.Push(data);
@@ -62,19 +69,32 @@ namespace Server
                 int dataSize = BitConverter.ToInt32(dataSizeBytes, 0);
 
                 // receive data
+                mutex.WaitOne();
                 byte[] data = new byte[currentChannel.readSize];
                 stream.Read(data, 0, dataSize);
                 currentChannel.dataBuffer.Push(data);
             }
 
-            
+            mutex.ReleaseMutex();
             // start waiting for the next data
             stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
         }
 
-        public byte[] Read(byte channel)
+        public byte[] Read(byte channel, bool waitForData)
         {
-            byte[] data = channels[channel].dataBuffer.Pop();
+            
+            mutex.WaitOne();
+            byte[] data = null;
+            if (!waitForData)
+            {
+                Channel currentChannel = channels[channel];
+                if (currentChannel.dataBuffer.Count > 0) 
+                {
+                    data = channels[channel].dataBuffer.Pop();
+                }
+            }
+            mutex.ReleaseMutex();
+
             return data;
         }
 
