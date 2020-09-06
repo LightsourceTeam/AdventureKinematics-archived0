@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+
+using UnityEngine;
 using UnityEditor;
 
 public class RuntimeReadOnly : PropertyAttribute { }
@@ -21,3 +23,11 @@ public class RuntimeReadOnlyDrawer : PropertyDrawer
         GUI.enabled = true;
     }
 }
+
+#else
+
+using System;
+
+public class RuntimeReadOnly : Attribute { }
+
+#endif

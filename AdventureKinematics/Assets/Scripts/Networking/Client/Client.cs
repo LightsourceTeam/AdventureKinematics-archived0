@@ -14,13 +14,19 @@ namespace Client
         public static Client client = null;
         public Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();
 
+        private IPAddress ip = IPAddress.Parse("127.0.0.1");
+        private int port = 23852;
+
         private TcpClient tcp;
         private NetworkStream stream;
 
         // constructor for intitializing new client
-        public Client(TcpClient tcpClient)
+        public void Awake()
         {
-            tcp = tcpClient;
+            tcp = new TcpClient();
+            tcp.Connect(ip, port);
+
+            Connect();
         }
 
         public void Connect()

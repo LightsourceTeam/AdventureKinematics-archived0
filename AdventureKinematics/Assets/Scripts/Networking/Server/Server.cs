@@ -8,28 +8,29 @@ using System;
 
 namespace Server
 {
-    public class Server
+    public class Server : MonoBehaviour
     {
         public static Server server;
 
         public static IPAddress ip = IPAddress.Parse("127.0.0.1");
         public static int port = 23852;
 
-        public TcpListener tcpListener;
+        private TcpListener tcpListener;
         public Dictionary<int, Client> clients = new Dictionary<int, Client>();
 
-        public int lastId = 0;
-        
         public void Start()
         {
             // setting active instance of the server
             if(server == null) server = this;
-            else if(server != this) Debug.LogError(this + ": You can not have two servers run simultaneously!");
-            else Debug.LogWarning(this +": No need to set it as active server - it already has this value");
+            else if(server != this) Gdebug.LogError(this + ": You can not have two servers run simultaneously!");
+            else Gdebug.LogWarning(this +": No need to set it as active server - it already has this value");
 
             // initilaize tcp listener and start accepting clients
-            tcpListener = new TcpListener(ip, port);
+            tcpListener = new TcpListener(ip, port);          
+            Gdebug.Log("Starting server on " + ip + " " + port + "...");
             tcpListener.Start();
+            
+            Gdebug.Log("Start accepting clients on " + ip + " " + port + "...");
             tcpListener.BeginAcceptTcpClient(new AsyncCallback(TCPConnectCallback), null);
         }
 
@@ -39,11 +40,11 @@ namespace Server
             TcpClient client = AcceptClient(result);
 
             // alert that new client has connected
-            Debug.Log("Incoming Connection: " + client.Client.RemoteEndPoint);
+            Gdebug.Log("Incoming Connection: " + client.Client.RemoteEndPoint);
             
             AddClient(new Client(client));
 
-            //Debug.Log("Connection Failed: " + client.Client.RemoteEndPoint);
+            //Gdebug.Log("Connection Failed: " + client.Client.RemoteEndPoint);
         }
 
         public TcpClient AcceptClient(IAsyncResult result)
@@ -54,7 +55,8 @@ namespace Server
 
             return client;
         }
-        
+                
+        private int lastId = 0;
         public void AddClient(Client client)
         {
             clients.Add(lastId, client);
@@ -65,6 +67,7 @@ namespace Server
 
         public void RemoveClient(Client client)
         {
+            client.tcp.Close();
             clients.Remove(client.id);
         }
 

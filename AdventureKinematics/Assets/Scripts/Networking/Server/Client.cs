@@ -19,7 +19,7 @@ namespace Server
         
         public int id;
 
-        private TcpClient tcp;
+        public TcpClient tcp;
         private NetworkStream stream;
 
         private Mutex mutex = new Mutex();
