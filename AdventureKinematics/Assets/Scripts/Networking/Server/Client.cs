@@ -40,6 +40,8 @@ namespace Server
 
             // begin data reading
             stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
+
+            ServerSend.Welcome(0, "Hello World", 4096);
         }
           
         private byte[] recvChannelBytes = new byte[1];
@@ -105,6 +107,15 @@ namespace Server
             stream.Write(sendChannelBytes, 0, 1);
             stream.Write(data, 0, size);
         }
+
+        public void SendData(byte[] data, int size)
+        {
+            if(tcp != null)
+            {
+                stream.Write(data, 0, size);
+            }
+        }
+
 
     }
 

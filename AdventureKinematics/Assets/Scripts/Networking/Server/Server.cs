@@ -16,7 +16,7 @@ namespace Server
         public static int port = 23852;
 
         private TcpListener tcpListener;
-        public Dictionary<int, Client> clients = new Dictionary<int, Client>();
+        public static Dictionary<int, Client> clients = new Dictionary<int, Client>();
 
         public void Start()
         {
