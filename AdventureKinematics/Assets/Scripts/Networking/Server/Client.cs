@@ -8,7 +8,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Server
 {
     public class Client
@@ -22,13 +21,14 @@ namespace Server
         public TcpClient tcp;
         private NetworkStream stream;
 
-        private Mutex mutex = new Mutex();
-
         // constructor for intitializing new client
         public Client(TcpClient client)
         {
             tcp = client;
         }
+
+
+        // function for strating server-side client management
 
         public void Connect()
         {
@@ -36,16 +36,18 @@ namespace Server
             stream = tcp.GetStream();
 
             // add default system channel
-            channels.Add(0, new Channel());
+            channels.Add(0, new DynamicChannel());
 
             // begin data reading
             stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
 
-            ServerSend.Welcome(0, "Hello World", 4096);
+            channels[0].Send(stream, Converter.ToBytes("Hello World!"));
         }
           
+        
+        // function that responds every time data comes to you
+
         private byte[] recvChannelBytes = new byte[1];
-        private byte[] dataSizeBytes = new byte[4];
         private void onDataIncome(IAsyncResult result)
         {
             // get channel to which we are reading
@@ -55,87 +57,109 @@ namespace Server
 
             Channel currentChannel = channels[channel];
 
-
-            if (currentChannel.type == ChannelType.stream)
+            lock(currentChannel)        // lock this channel to prevent data races
             {
-                // receive data
-                mutex.WaitOne();
-                byte[] data = new byte[currentChannel.readSize];
-                stream.Read(data, 0, currentChannel.readSize);
-                currentChannel.dataBuffer.Push(data);
-            }
-            else
-            {
-                // get data size
-                stream.Read(dataSizeBytes, 0, currentChannel.readSize);
-                int dataSize = BitConverter.ToInt32(dataSizeBytes, 0);
-
-                // receive data
-                mutex.WaitOne();
-                byte[] data = new byte[currentChannel.readSize];
-                stream.Read(data, 0, dataSize);
-                currentChannel.dataBuffer.Push(data);
+                byte[] data = currentChannel.Receive(stream);
+                currentChannel.WriteToBuffer(data);
             }
 
-            mutex.ReleaseMutex();
             // start waiting for the next data
             stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
         }
 
-        public byte[] Read(byte channel, bool waitForData)
+        private void ClearAllBuffers()
         {
-            
-            mutex.WaitOne();
-            byte[] data = null;
-            if (!waitForData)
+            foreach (KeyValuePair<byte, Channel> channel in channels)
             {
-                Channel currentChannel = channels[channel];
-                if (currentChannel.dataBuffer.Count > 0) 
-                {
-                    data = channels[channel].dataBuffer.Pop();
-                }
-            }
-            mutex.ReleaseMutex();
-
-            return data;
-        }
-
-        private byte[] sendChannelBytes = new byte[1];
-        private void Write(byte[] data, int size, byte channel)
-        {
-            sendChannelBytes[0] = channel;
-            stream.Write(sendChannelBytes, 0, 1);
-            stream.Write(data, 0, size);
-        }
-
-        public void SendData(byte[] data, int size)
-        {
-            if(tcp != null)
-            {
-                stream.Write(data, 0, size);
+                channel.Value.ClearBuffer();
             }
         }
 
-
     }
 
-    public enum ChannelType
-    {
-        json,
-        list,
-        stream
-    }
-    
     public class Channel
     {
         public Channel() { }
 
         public Stack<byte[]> dataBuffer = new Stack<byte[]>();
-        
+
         public byte id = 0;
+
+        public void ClearBuffer()
+        {
+            lock (this) dataBuffer.Clear();
+        }
+
+        public void WriteToBuffer(byte[] data)
+        {
+            dataBuffer.Push(data);
+        }
+
+        public byte[] ReadFromBuffer()
+        {
+            return dataBuffer.Pop();
+        }
+
+        public virtual byte[] Receive(NetworkStream stream)
+        {
+            return null;
+        }
+
+        public virtual void Send(NetworkStream stream, byte[] data)
+        {
+
+        }
+    }
+
+    public class DynamicChannel : Channel
+    {
+        public override void Send(NetworkStream stream, byte[] data)
+        {
+            byte[] sendChannelBytes = new byte[1];
+            sendChannelBytes[0] = id;
+
+            stream.Write(sendChannelBytes, 0, 1);
+            stream.Write(Converter.ToBytes(data.Length), 0, 4);
+            stream.Write(data, 0, data.Length);
+        }
+
+
+        private byte[] dataSizeBytes = new byte[4];
+        public override byte[] Receive(NetworkStream stream)
+        {
+            // get data size
+            stream.Read(dataSizeBytes, 0, 4);
+            int dataSize = BitConverter.ToInt32(dataSizeBytes, 0);
+
+
+            // receive data
+            byte[] data = new byte[dataSize];
+            stream.Read(data, 0, dataSize);
+
+            return data;
+        }
+    }
+
+    public class StreamChannel : Channel
+    {
         public int readSize = 0;
-        public ChannelType type = ChannelType.list;
-        
+
+        public override void Send(NetworkStream stream, byte[] data)
+        {
+            byte[] sendChannelBytes = new byte[1];
+            sendChannelBytes[0] = id;
+
+            stream.Write(sendChannelBytes, 0, 1);
+            stream.Write(data, 0, data.Length);
+        }
+
+        public override byte[] Receive(NetworkStream stream)
+        {
+            byte[] data = new byte[readSize];
+            stream.Read(data, 0, readSize);
+
+            return data;
+        }
     }
 
 }

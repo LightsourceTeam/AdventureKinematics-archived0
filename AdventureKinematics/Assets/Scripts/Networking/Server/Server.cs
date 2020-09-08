@@ -41,7 +41,6 @@ namespace Server
 
             // alert that new client has connected
             Gdebug.Log("Incoming Connection: " + client.Client.RemoteEndPoint);
-            
             AddClient(new Client(client));
 
             //Gdebug.Log("Connection Failed: " + client.Client.RemoteEndPoint);

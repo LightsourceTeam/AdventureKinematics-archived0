@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System;
 
+
 public class Converter : MonoBehaviour
 {
     // To Type
@@ -35,7 +36,7 @@ public class Converter : MonoBehaviour
 
     public static string ToString(byte[] data)
     {
-        string converted = BitConverter.ToString(data, 0);
+        string converted = Encoding.UTF8.GetString(data);
         return converted;
     }
 
@@ -73,7 +74,7 @@ public class Converter : MonoBehaviour
 
     public static byte[] ToBytes(string data)
     {
-        byte[] converted = Encoding.ASCII.GetBytes(data);
+        byte[] converted = Encoding.UTF8.GetBytes(data);
         return converted;
     }
 
