@@ -31,7 +31,7 @@ namespace Client
         }
 
 
-        // function for connectiong client-side client
+        // function for connecting client-side client
 
         public void Connect()
         {
@@ -44,7 +44,7 @@ namespace Client
             stream = tcp.GetStream();
 
             // add default system channel
-            channels.Add(0, new DynamicChannel());
+            channels.Add(0, new DynamicChannel(0));
 
             // begin data reading
             stream.BeginRead(recvChannelBytes, 0, 1, OnDataIncome, null);
@@ -55,19 +55,30 @@ namespace Client
         {
             // get channel to which we are reading
             stream.EndRead(result);
+
+            // get channel to which we are reading
             byte channel = recvChannelBytes[0];
             Channel currentChannel = channels[channel];
 
-            lock(currentChannel)
+            // accept data
+            lock (currentChannel)       // lock this channel to prevent data races
             {
                 
                 byte[] data = currentChannel.Receive(stream);
                 currentChannel.Write(data);
-
-                
-                Gdebug.Log(Converter.ToString(currentChannel.Read()));
-
             }
+
+
+
+
+
+            // test receive
+            Gdebug.Log(Converter.ToString(currentChannel.Read()));
+
+
+
+
+
             // start waiting for the next data
             stream.BeginRead(recvChannelBytes, 0, 1, OnDataIncome, null);
         }
@@ -84,7 +95,7 @@ namespace Client
 
     public class Channel
     {
-        public Channel() { }
+        protected Channel() { }
 
         public Stack<byte[]> dataBuffer = new Stack<byte[]>();
 
@@ -103,6 +114,8 @@ namespace Client
 
     public class DynamicChannel : Channel
     {
+        public DynamicChannel(byte id) { this.id = id; }
+
         public override void Send(NetworkStream stream, byte[] data)
         {
             byte[] sendChannelBytes = new byte[1];
@@ -111,7 +124,7 @@ namespace Client
             stream.Write(sendChannelBytes, 0, 1);
             stream.Write(Converter.ToBytes(data.Length), 0, 4);
             stream.Write(data, 0, data.Length);
-        }  
+        }
 
 
         private byte[] dataSizeBytes = new byte[4];
@@ -132,6 +145,8 @@ namespace Client
 
     public class StreamChannel : Channel
     {
+        public StreamChannel(byte id) { this.id = id; }
+
         public int readSize = 0;
 
         public override void Send(NetworkStream stream, byte[] data)

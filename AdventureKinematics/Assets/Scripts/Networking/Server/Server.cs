@@ -41,7 +41,7 @@ namespace Server
 
             // alert that new client has connected
             Gdebug.Log("Incoming Connection: " + client.Client.RemoteEndPoint);
-            AddClient(new Client(client));
+            AddClient(new Client(), client);
 
             //Gdebug.Log("Connection Failed: " + client.Client.RemoteEndPoint);
         }
@@ -56,10 +56,10 @@ namespace Server
         }
                 
         private int lastId = 0;
-        public void AddClient(Client client)
+        public void AddClient(Client client, TcpClient newTcp)
         {
             clients.Add(lastId, client);
-            clients[lastId].Connect();
+            clients[lastId].Connect(newTcp);
             clients[lastId].id = lastId;
             lastId++;
         }

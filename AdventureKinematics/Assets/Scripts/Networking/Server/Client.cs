@@ -21,22 +21,17 @@ namespace Server
         public TcpClient tcp;
         private NetworkStream stream;
 
-        // constructor for intitializing new client
-        public Client(TcpClient client)
-        {
-            tcp = client;
-        }
-
 
         // function for strating server-side client management
 
-        public void Connect()
+        public void Connect(TcpClient client)
         {
             // get tcp network stream
+            tcp = client;
             stream = tcp.GetStream();
 
             // add default system channel
-            channels.Add(0, new DynamicChannel());
+            channels.Add(0, new DynamicChannel(0));
 
             // begin data reading
             stream.BeginRead(recvChannelBytes, 0, 1, onDataIncome, null);
@@ -50,17 +45,18 @@ namespace Server
         private byte[] recvChannelBytes = new byte[1];
         private void onDataIncome(IAsyncResult result)
         {
-            // get channel to which we are reading
+            // end receiveing data
             stream.EndRead(result);
+
+            // get channel to which we are reading
             byte channel = recvChannelBytes[0];
-
-
             Channel currentChannel = channels[channel];
 
+            // accept data
             lock(currentChannel)        // lock this channel to prevent data races
             {
                 byte[] data = currentChannel.Receive(stream);
-                currentChannel.WriteToBuffer(data);
+                currentChannel.Write(data);
             }
 
             // start waiting for the next data
@@ -79,40 +75,27 @@ namespace Server
 
     public class Channel
     {
-        public Channel() { }
+        protected Channel() { }
 
         public Stack<byte[]> dataBuffer = new Stack<byte[]>();
 
         public byte id = 0;
 
-        public void ClearBuffer()
-        {
-            lock (this) dataBuffer.Clear();
-        }
+        public void ClearBuffer() { lock (this) dataBuffer.Clear(); }
 
-        public void WriteToBuffer(byte[] data)
-        {
-            dataBuffer.Push(data);
-        }
+        public void Write(byte[] data) { dataBuffer.Push(data); }
 
-        public byte[] ReadFromBuffer()
-        {
-            return dataBuffer.Pop();
-        }
+        public byte[] Read() { return dataBuffer.Pop();  }
 
-        public virtual byte[] Receive(NetworkStream stream)
-        {
-            return null;
-        }
+        public virtual byte[] Receive(NetworkStream stream) { return null; }
 
-        public virtual void Send(NetworkStream stream, byte[] data)
-        {
-
-        }
+        public virtual void Send(NetworkStream stream, byte[] data) { }
     }
 
     public class DynamicChannel : Channel
     {
+        public DynamicChannel(byte id) { this.id = id; }
+
         public override void Send(NetworkStream stream, byte[] data)
         {
             byte[] sendChannelBytes = new byte[1];
@@ -142,6 +125,8 @@ namespace Server
 
     public class StreamChannel : Channel
     {
+        public StreamChannel(byte id) { this.id = id; }
+
         public int readSize = 0;
 
         public override void Send(NetworkStream stream, byte[] data)
