@@ -1,40 +1,45 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using System.Text;
-using System.Net;
+using System.Linq;
+using System.Reflection;
 using System.Net.Sockets;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Server
 {
     public class Client
     {
+        //--------------------------------------------------
+        #region VARIABLES
+        /// public variables declaration
+        
+
+
         // state of the client
         public bool isAlive { get; private set; } = false;
 
 
-        // main  channel list
-        public Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();
-
-        // overload list constructor for convenience
-        public Channel this[byte i]
-        {
-            get { return channels[i]; }
-            set { channels[i] = value; }
-        }
-
-        // cliant identifier at server
+        // client identifier at server
         public int id;
 
         public TcpClient tcp;
         public NetworkStream stream;
 
 
-        // function for strating server-side client management
-        public void Connect(TcpClient client, int clientId)
+
+
+        #endregion
+        //--------------------------------------------------
+        #region LOCAL METHODS
+        /// these methods will be executed only here
+
+
+
+        public Channel this[byte i]         // operator for accessing channels 
+        { get { return (channels != null) ? channels[i] : null; } }
+
+        public void Connect(TcpClient client, int clientId)        // start server-side client management 
         {
             // get tcp network stream
             tcp = client;
@@ -42,17 +47,38 @@ namespace Server
             id = clientId;
 
             // add default system channel
-            AddDynamicChannel();
+            channels.Add(0, new Channel(this, 0));
 
             // state that client is alive now;
             isAlive = true;
 
+            // initialize client-sent methods
+            InitSentInstructions();
+
             // begin data reading
-            stream.BeginRead(recvChannelBytes, 0, 1, DataAvailable, null);
+            stream.BeginRead(receiveTempBuffer, 0, 1, OnDataReceive, null);
 
         }
 
-        public void Disconnect()
+        public void ClearAllBuffers()        // clear all buffered messages in all channels except system channel 
+        {
+            foreach (KeyValuePair<byte, Channel> channel in channels)
+            {
+                channel.Value?.ClearBuffer();
+            }
+        }
+
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region GLOBAL METHODS
+        /// these methods will execute both here, and on client
+
+
+
+        public void Disconnect()              // safely disconnect client 
         {
             lock (this)
             {
@@ -67,172 +93,197 @@ namespace Server
         }
 
 
-        // function that responds every time data comes to you
-        private byte[] recvChannelBytes = new byte[1];
-        private void DataAvailable(IAsyncResult result)
+        public Channel AcquireChannel()                // acquire channel 
+        {
+            for (byte i = 1; i <= 255; i++)
+            {
+                if (!channels.ContainsKey(i))
+                {
+                    Channel newChannel = new Channel(this, i);
+                    channels.Add(i, newChannel);
+                    return newChannel;
+                }
+            }
+
+            return null;
+        }
+
+
+        public bool ReleaseChannel(byte channelId)     // release channel 
+        {
+            return channels.Remove(channelId);
+        }
+
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region CLIENT-SENT INSTRUCTIONS
+        /// instructions coming from client
+
+
+
+        [ClientSent(-1)]
+        private void HelloWorld(Client self, byte[] data)       // testing function
+        { Logging.LogWarning("Hello from the client-side! See *InitSentInstructions* to turn off this message."); }
+
+
+        [ClientSent(0)]
+        private void AcquireChannel(Client self, byte[] data)  // acquire channel 
+        {
+            byte channelId = data[2];
+        }
+
+
+        [ClientSent(1)]
+        private void ReleaseChannel(Client self, byte[] data)  // release channel 
+        {  }
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region INTERNAL VARIABLES
+        /// inaccessible variables, that are responsible for internal client data storing
+
+
+
+        private Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();         // communication channels
+        private Channel systemChannel;                                                        // system channel
+
+        private Dictionary<int, Action<Client, byte[]>> sentInstructions;                     // dictionary of sent instructions
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region INTERNAL METHODS
+        /// inaccessible methods, that are responsible for internal client functioning
+
+
+        
+        private void InitSentInstructions()                // making client-sent methods accessible 
+        {
+            /*
+            super puper large line which:
+                1. gets non-public methods from *Client*, which are marked with *ClientSentAttribute*
+                2. gets delegates to the gotten functions from their *MethodInfo*'s
+                3. stores them to *sentInstructions*-dictionary, where keys are from *callbackId* of *ClientSentAttribute*, and values are delegates themselves
+            */
+            sentInstructions = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.GetCustomAttribute(typeof(ClientSentAttribute)) != null).Select(x => (x.CreateDelegate(typeof(Action<Client, byte[]>), this) as Action<Client, byte[]>)).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(ClientSentAttribute)) as ClientSentAttribute).callbackId);
+
+
+            sentInstructions[-1](this, null); // debugging
+        }
+
+
+        private void OnDataReceive(IAsyncResult result)     // function that gets invoked every time data comes to you
         {
             // get channel to which we are reading
             stream.EndRead(result);
 
             // get channel to which we are reading
-            byte channel = recvChannelBytes[0];
+            byte channel = receiveTempBuffer[0];
             Channel currentChannel = null;
             lock (this) currentChannel = channels[channel];
+            
+            // perform data receiving and buffering
+            lock(currentChannel)
+            {
+                stream.Read(receiveTempBuffer, 0, 4);
+                int dataSize = Converter.ToInt(receiveTempBuffer);
 
-            // accept data
-            currentChannel.ReadFromStream();
+                byte[] data = new byte[dataSize];
+                stream.Read(data, 0, dataSize);
+
+                currentChannel.dataBuffer.Push(data);
+            }
 
 
             // start waiting for the next data
-            stream.BeginRead(recvChannelBytes, 0, 1, DataAvailable, null);
+            if(isAlive) stream.BeginRead(receiveTempBuffer, 0, 1, OnDataReceive, null);
         }
+        private byte[] receiveTempBuffer = new byte[4];
 
 
-        private void ClearAllBuffers()
+
+
+        #endregion
+        //--------------------------------------------------
+        #region CLASSES
+        /// classes, used by client internally
+
+
+
+        public class Channel
         {
-            foreach (KeyValuePair<byte, Channel> channel in channels)
+            public Channel(Client client, byte identifier) { this.client = client; id = identifier; }
+
+
+            public Stack<byte[]> dataBuffer = new Stack<byte[]>();
+            protected Client client;
+            public byte id = 0;
+
+
+
+            ///     INTERACTION METHODS     ///
+
+
+
+            // clear all buffered messages in this channel
+            public virtual void ClearBuffer() { lock (this) dataBuffer.Clear(); }
+
+
+            // send data through this channel
+            public void Send(byte[] data)
             {
-                channel.Value.ClearBuffer();
+                lock (this)
+                {
+                    sendTempBuffer[0] = id;
+                    client.stream.Write(sendTempBuffer, 0, 1);
+                    client.stream.Write(Converter.ToBytes(data.Length), 0, 4);
+                    client.stream.Write(data, 0, data.Length);
+                }
+            }
+            byte[] sendTempBuffer = new byte[1];
+
+
+            // receive data from this channel
+            public byte[] Recv(int timeout = -1)
+            {
+                lock (this)
+                {
+                    // if data is already present, we'll get it
+                    if (dataBuffer.Count > 0) return dataBuffer.Pop();
+
+                    // if not, we'll wait for it *timeout* milliseconds. *timeout = -1* means wait forever.
+                    if (Monitor.Wait(this, timeout)) return dataBuffer.Pop();
+
+                    // if no data within specified time, stop waiting and return null
+                    return null;
+                }
             }
         }
 
-        byte lastChannel = 0;
-        public byte AddStreamChannel()
+
+        [AttributeUsage(AttributeTargets.Method)]
+        public class ClientSentAttribute : Attribute
         {
-            lock (this)
+            public int callbackId;
+
+            public ClientSentAttribute(int callbackIdentifier)
             {
-                channels.Add(lastChannel, new StreamChannel(this, lastChannel));
-                return lastChannel++;
+                this.callbackId = callbackIdentifier;
             }
         }
 
-        public byte AddDynamicChannel()
-        {
-            lock (this)
-            {
-                channels.Add(lastChannel, new DynamicChannel(this, lastChannel));
-                return lastChannel++;
-            }
-        }
 
-        public void RemoveChannel(byte channel)
-        {
-            lock (this) channels.Remove(channel);
-        }
+
+
+        #endregion
+        //--------------------------------------------------
     }
 
-
-
-
-    public class Channel
-    {
-        protected Channel(Client client, byte identifier) { this.client = client; id = identifier; }
-
-
-        public Stack<byte[]> dataBuffer = new Stack<byte[]>();
-        protected Client client;
-        public byte id = 0;
-
-
-        public void ClearBuffer() { lock(this) dataBuffer.Clear(); }
-
-
-        // send data through this channel
-        public virtual void Send(byte[] data) { }
-
-        // receive data from this channel
-        public byte[] Recv(int timeout = -1)
-        {
-            lock (this)
-            {
-                // if data is already present, we'll get it
-                if (dataBuffer.Count > 0) return dataBuffer.Pop();
-
-                // if not, we'll wait for it *timeout* milliseconds. *timeout = -1* means wait forever.
-                if (Monitor.Wait(this, timeout)) return dataBuffer.Pop();
-
-                // if no data within specified time, stop waiting and return null
-                return null;
-            }
-        }
-
-
-        // function which gets called by server when new data arrives. Do NOT call it when client is running!
-        public virtual void ReadFromStream() { }
-
-    }
-
-
-    public class DynamicChannel : Channel
-    {
-        public DynamicChannel(Client client, byte identifier) : base(client, identifier) { }
-
-
-        public override void Send(byte[] data)
-        {
-            byte[] sendChannelBytes = new byte[1];
-                
-            lock (this)
-            {
-                sendChannelBytes[0] = id;
-                client.stream.Write(sendChannelBytes, 0, 1);
-                client.stream.Write(Converter.ToBytes(data.Length), 0, 4);
-                client.stream.Write(data, 0, data.Length);
-            }
-        }
-
-
-        private byte[] dataSizeBytes = new byte[4];
-        public override void ReadFromStream()
-        {
-            // get data size
-            client.stream.Read(dataSizeBytes, 0, 4);
-            int dataSize = BitConverter.ToInt32(dataSizeBytes, 0);
-
-            // receive data
-            byte[] data = new byte[dataSize];
-            client.stream.Read(data, 0, dataSize);
-
-            // push received data to buffer, and fire a message thet new data has been sent
-            lock (this)
-            {
-                dataBuffer.Push(data);
-                Monitor.Pulse(this);
-            }
-        }
-    }
-
-
-    public class StreamChannel : Channel
-    {
-        public StreamChannel(Client client, byte identifier) : base(client, identifier) { }
-
-
-        public int readSize = 0;
-        public override void Send(byte[] data)
-        {
-            byte[] sendChannelBytes = new byte[1];
-
-            lock (this)
-            {
-                sendChannelBytes[0] = id;
-                client.stream.Write(sendChannelBytes, 0, 1);
-                client.stream.Write(data, 0, data.Length);
-            }
-        }
-
-        public override void ReadFromStream()
-        {
-            byte[] data = new byte[readSize];
-            client.stream.Read(data, 0, readSize);
-
-            // push received data to buffer, and fire a message thet new data has been sent
-            lock (this)
-            {
-                dataBuffer.Push(data);
-                Monitor.Pulse(this);
-            }
-        }
-    }
 
 }

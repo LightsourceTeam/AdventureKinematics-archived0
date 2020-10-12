@@ -10,78 +10,66 @@ using System;
 public class Converter : MonoBehaviour
 {
     // To Type
-    public static int ToInt(byte[] data)
+    public static int ToInt(byte[] data, int startIndex=0)
     {
-        int converted = BitConverter.ToInt32(data, 0);
-        return converted;
+        return BitConverter.ToInt32(data, startIndex);
     }
 
-    public static short ToShort(byte[] data)
+    public static short ToShort(byte[] data, int startIndex = 0)
     {
-        short converted = BitConverter.ToInt16(data, 0);
-        return converted;
+        return BitConverter.ToInt16(data, startIndex);
     }
 
-    public static long ToLong(byte[] data)
+    public static long ToLong(byte[] data, int startIndex = 0)
     {
-        long converted = BitConverter.ToInt64(data, 0);
-        return converted;
+        return BitConverter.ToInt64(data, startIndex);
     }
 
-    public static float ToFloat(byte[] data)
+    public static float ToFloat(byte[] data, int startIndex = 0)
     {
-        float converted = BitConverter.ToSingle(data, 0);
-        return converted;
+        return BitConverter.ToSingle(data, startIndex);
     }
 
-    public static string ToString(byte[] data)
+    public static string ToString(byte[] data, int startIndex = 0)
     {
-        string converted = Encoding.UTF8.GetString(data);
-        return converted;
+        return BitConverter.ToString(data, startIndex);
     }
 
-    public static bool ToBool(byte[] data)
+    public static bool ToBool(byte[] data, int startIndex = 0)
     {
-        bool converted = BitConverter.ToBoolean(data, 0);
-        return converted;
+        return BitConverter.ToBoolean(data, startIndex);
     }
 
     // To Byte
 
     public static byte[] ToBytes(int data)
     {
-        byte[] converted = BitConverter.GetBytes(data);
-        return converted;
+        return BitConverter.GetBytes(data);
     }
 
     public static byte[] ToBytes(short data)
     {
-        byte[] converted = BitConverter.GetBytes(data);
-        return converted;
+        return BitConverter.GetBytes(data);
     }
 
     public static byte[] ToBytes(long data)
-    {
-        byte[] converted = BitConverter.GetBytes(data);
-        return converted;
+    { 
+        return BitConverter.GetBytes(data);
     }
 
     public static byte[] ToBytes(float data)
     {
-        byte[] converted = BitConverter.GetBytes(data);
-        return converted;
+        return BitConverter.GetBytes(data);
     }
 
     public static byte[] ToBytes(string data)
     {
-        byte[] converted = Encoding.UTF8.GetBytes(data);
-        return converted;
+        return Encoding.UTF8.GetBytes(data);
     }
 
     public static byte[] ToBytes(bool data)
     {
-        byte[] converted = BitConverter.GetBytes(data);
-        return converted;
+        return BitConverter.GetBytes(data);
     }
 
 }
