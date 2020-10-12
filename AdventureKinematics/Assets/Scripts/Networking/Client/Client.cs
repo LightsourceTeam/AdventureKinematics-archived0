@@ -58,7 +58,7 @@ namespace Client
             channels.Add(0, new Channel(0));
 
             // initialize server-sent methods
-            InitSentInstructions();
+            RegisterInstructionsDelegates();
 
             // begin data reading
             stream.BeginRead(receiveTempBuffer, 0, 1, OnDataReceive, null);
@@ -110,20 +110,20 @@ namespace Client
 
 
 
-        [ServerSent(-1)]
-        private void HelloWorld(Client self, byte[] data)       // testing function
-        { Logging.LogWarning("Hello from the server-side! See *InitSentInstructions* to turn off this message."); }
+        [ServerInstruction(-1)]
+        private void instHelloWorld(byte[] data)       // testing function
+        { Logging.LogWarning("Hello from the server-side!"); }
 
 
-        [ServerSent(0)]
-        private void AcquireChannel(Client self, byte[] data)   // acquire channel 
+        [ServerInstruction(0)]
+        private void instAcquireChannel(byte[] data)   // acquire channel 
         {
             byte channelId = data[2];
         }
 
 
-        [ServerSent(1)]
-        private void ReleaseChannel(Client self, byte[] data)    // release channel 
+        [ServerInstruction(1)]
+        private void instReleaseChannel(byte[] data)    // release channel 
         { 
             Logging.Log("Hello, server!"); 
         }
@@ -140,7 +140,7 @@ namespace Client
         private Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();    // communication channels
         private Channel systemChannel;                                                   // system channel
 
-        private Dictionary<int, Action<Client, byte[]>> sentInstructions;        // dictionary of sent instructions
+        private Dictionary<short, Action<byte[]>> sentInstructions;        // dictionary of sent instructions
 
         // connection address
         private IPAddress ip = IPAddress.Parse("127.0.0.1");
@@ -160,7 +160,7 @@ namespace Client
             Connect();
         }
 
-        private void InitSentInstructions()    // making server-sent methods accessible 
+        private void RegisterInstructionsDelegates()    // bind instructions received from system channel to the instructions methods 
         {
             /*
             super puper large line which:
@@ -168,10 +168,10 @@ namespace Client
                 2. gets delegates to the gotten functions from their *MethodInfo*'s
                 3. stores them to *sentInstructions*-dictionary, where keys are Ids of *ServerSentAttribute*, and values are delegates themselves
             */
-            sentInstructions = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.GetCustomAttribute(typeof(ServerSentAttribute)) != null).Select(x => (x.CreateDelegate(typeof(Action<Client, byte[]>), this) as Action<Client, byte[]>)).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(ServerSentAttribute)) as ServerSentAttribute).callbackId);
+            sentInstructions = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.GetCustomAttribute(typeof(ServerInstructionAttribute)) != null).Select(x => (x.CreateDelegate(typeof(Action<byte[]>), this) as Action<byte[]>)).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(ServerInstructionAttribute)) as ServerInstructionAttribute).id);
 
 
-            sentInstructions[-1](this, null); // debugging
+            sentInstructions[-1](null); // debugging
         }
 
         private void OnDataReceive(IAsyncResult result)     // function that gets invoked every time data comes to you 
@@ -263,13 +263,13 @@ namespace Client
 
 
         [AttributeUsage(AttributeTargets.Method)]
-        public class ServerSentAttribute : Attribute
+        public class ServerInstructionAttribute : Attribute
         {
-            public int callbackId;
+            public short id;
 
-            public ServerSentAttribute(int cbckId)
+            public ServerInstructionAttribute(short instructionId)
             {
-                this.callbackId = cbckId;
+                this.id = instructionId;
             }
         }
 

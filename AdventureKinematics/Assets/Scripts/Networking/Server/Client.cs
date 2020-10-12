@@ -53,7 +53,7 @@ namespace Server
             isAlive = true;
 
             // initialize client-sent methods
-            InitSentInstructions();
+            RegisterInstructionsDelegates();
 
             // begin data reading
             stream.BeginRead(receiveTempBuffer, 0, 1, OnDataReceive, null);
@@ -124,20 +124,20 @@ namespace Server
 
 
 
-        [ClientSent(-1)]
-        private void HelloWorld(Client self, byte[] data)       // testing function
-        { Logging.LogWarning("Hello from the client-side! See *InitSentInstructions* to turn off this message."); }
+        [ClientInstruction(-1)]
+        private void instHelloWorld(byte[] data)       // testing function
+        { Logging.LogWarning("Hello from the client-side!"); }
 
 
-        [ClientSent(0)]
-        private void AcquireChannel(Client self, byte[] data)  // acquire channel 
+        [ClientInstruction(0)]
+        private void instAcquireChannel(byte[] data)  // acquire channel 
         {
             byte channelId = data[2];
         }
 
 
-        [ClientSent(1)]
-        private void ReleaseChannel(Client self, byte[] data)  // release channel 
+        [ClientInstruction(1)]
+        private void instReleaseChannel(byte[] data)  // release channel 
         {  }
 
 
@@ -152,7 +152,7 @@ namespace Server
         private Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();         // communication channels
         private Channel systemChannel;                                                        // system channel
 
-        private Dictionary<int, Action<Client, byte[]>> sentInstructions;                     // dictionary of sent instructions
+        private Dictionary<short, Action<byte[]>> sentInstructions;                     // dictionary of sent instructions
 
 
 
@@ -163,7 +163,7 @@ namespace Server
 
 
         
-        private void InitSentInstructions()                // making client-sent methods accessible 
+        private void RegisterInstructionsDelegates()    // bind instructions received from system channel to the instructions methods 
         {
             /*
             super puper large line which:
@@ -171,10 +171,10 @@ namespace Server
                 2. gets delegates to the gotten functions from their *MethodInfo*'s
                 3. stores them to *sentInstructions*-dictionary, where keys are from *callbackId* of *ClientSentAttribute*, and values are delegates themselves
             */
-            sentInstructions = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.GetCustomAttribute(typeof(ClientSentAttribute)) != null).Select(x => (x.CreateDelegate(typeof(Action<Client, byte[]>), this) as Action<Client, byte[]>)).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(ClientSentAttribute)) as ClientSentAttribute).callbackId);
+            sentInstructions = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.GetCustomAttribute(typeof(ClientInstructionAttribute)) != null).Select(x => (x.CreateDelegate(typeof(Action<byte[]>), this) as Action<byte[]>)).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(ClientInstructionAttribute)) as ClientInstructionAttribute).id);
 
 
-            sentInstructions[-1](this, null); // debugging
+            sentInstructions[-1](null); // debugging
         }
 
 
@@ -268,13 +268,13 @@ namespace Server
 
 
         [AttributeUsage(AttributeTargets.Method)]
-        public class ClientSentAttribute : Attribute
+        public class ClientInstructionAttribute : Attribute
         {
-            public int callbackId;
+            public short id;
 
-            public ClientSentAttribute(int callbackIdentifier)
+            public ClientInstructionAttribute(short instructionId)
             {
-                this.callbackId = callbackIdentifier;
+                id = instructionId;
             }
         }
 
