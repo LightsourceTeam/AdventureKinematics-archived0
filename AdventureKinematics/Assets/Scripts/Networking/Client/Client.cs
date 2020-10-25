@@ -1,46 +1,42 @@
-﻿
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Net;
 using System.Net.Sockets;
 using System;
 using System.Threading;
+using SourceExtensions;
+using System.IO;
 
-namespace Client
+namespace Networking.Client
 {
-    public class Client : MonoBehaviour
+    public class Client : CustomMonoBehaviour
     {
         //--------------------------------------------------
         #region VARIABLES
         /// variables declaration
 
-        
+
 
         public static Client client = null;
-
-        public Channel this[byte i]
-        {
-            get { return (channels != null) ? channels[i] : null; }
-        }
-
+        public int clientId;
         public TcpClient tcp;
         public NetworkStream stream;
+
+        public SafeParamLock usageLock = new SafeParamLock();
 
 
 
         #endregion
         //--------------------------------------------------
-        #region LOCAL METHODS
+        #region INTERACTION METHODS
         /// these methods will be executed only here
-        
+
 
 
         public void Connect()    // connect client-side client 
-        {  
-
-            // ser static instance of the client
+        {
+            // set static instance of the client
             if (client == null) client = this;
             else if (client != this) Logging.LogError(this + ": Failed to set active instance - it already is set to " + client);
             else Logging.LogWarning(this + ": No need to setup this as active object - it already is");
@@ -52,56 +48,103 @@ namespace Client
             tcp.Connect(ip, port);
             stream = tcp.GetStream();
 
-            Logging.LogInfo("Successfully connected. Starting data transfer protocol...");
-
-            // add default system channel
-            channels.Add(0, new Channel(0));
+            Logging.LogAccept("Successfully connected. Starting data transfer protocol...");
 
             // initialize server-sent methods
-            RegisterInstructionsDelegates();
+            RegisterInstructions(this);
 
             // begin data reading
-            stream.BeginRead(receiveTempBuffer, 0, 1, OnDataReceive, null);
+            stream.BeginRead(headerBuffer, 0, 6, OnDataReceive, null);
         }
 
-        public void ClearAllBuffers()   // clear all buffered messages in all channels except system channel 
+        public void Disconnect()              // safely disconnect client
         {
-            foreach (KeyValuePair<byte, Channel> channel in channels)
+            OnDisconnect();
+            onDisconnect?.Invoke();
+
+            tcp.Client.Shutdown(SocketShutdown.Both);
+        }
+
+        public void Send(Instructions instructionId, byte[] data = null, bool waitTillEnd = false)
+        {
+            byte[] dataToSend;
+
+            if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
+            else  dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
+
+            if (waitTillEnd) stream.Write(dataToSend, 0, dataToSend.Length);
+            else stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+        }
+
+        public void RegisterInstructions(object objToRegisterInstructionsFor)    // bind instructions received from system channel to the instructions methods 
+        {
+            /*
+            super puper large line which:
+                1. gets non-public methods from *Client*, which are marked with *ServerSentAttribute*
+                2. gets delegates to the gotten functions from their *MethodInfo*'s
+                3. stores them to *sentInstructions*-dictionary, where keys are Ids of *ServerSentAttribute*, and values are delegates themselves
+            */
+
+            instructions = (from method in objToRegisterInstructionsFor.GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                            where method.GetCustomAttribute(typeof(InstructionAttribute)) != null
+                            select method.CreateDelegate(typeof(Action<byte[]>), objToRegisterInstructionsFor) as Action<byte[]>).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(InstructionAttribute)) as InstructionAttribute).id);
+
+            //instructions[-1](Converter.ToBytes("Hello World!")); ; // debugging
+        }
+
+        public void ExecuteOne()
+        {
+            KeyValuePair<short, byte[]> instruction;
+
+            lock (instructionsLock) { if (instructionsToExecute.Count > 0) instruction = instructionsToExecute.Pop(); }
+
+            instructions[instruction.Key]?.Invoke(instruction.Value);
+        }
+
+        public void ExecuteAll()
+        {
+
+            KeyValuePair<short, byte[]> instruction;
+
+            lock (instructionsLock)
             {
-                channel.Value?.ClearBuffer();
+                while (instructionsToExecute.Count > 0)
+                {
+                    instruction = instructionsToExecute.Pop();
+                    instructions[instruction.Key]?.Invoke(instruction.Value);
+                }
             }
+            
         }
 
 
 
         #endregion
         //--------------------------------------------------
-        #region GLOBAL METHODS
-        /// these methods will begin execution both here, and on server
+        #region EVENTS
 
 
 
-        public Channel AcquireChannel()     // acquire channel 
+        public event Action onInstruction;
+        public event Action onDisconnect;
+
+        protected void Start()
         {
-            for (byte i = 1; i <= 255; i++)
-            {
-                if (!channels.ContainsKey(i))
-                {
-                    Channel newChannel = new Channel(i);
-                    channels.Add(i, newChannel);
-                    return newChannel;
-                }
-            }
+            Connect();
 
-            return null;
+            byte[] data = Bytes.Combine(Bytes.ToBytes("Hello you silly!"), Bytes.ToBytes("Inneccessary message!"));
+            Send(Instructions.HelloWorld, data);
         }
 
-        public bool ReleaseChannel(byte channelId)  // release channel 
+        public void OnDisconnect()
         {
-            return channels.Remove(channelId);
+            
         }
 
-
+        public void OnApplicationQuit()
+        {
+            Disconnect();
+        }
 
         #endregion
         //--------------------------------------------------
@@ -110,24 +153,27 @@ namespace Client
 
 
 
-        [ServerInstruction(-1)]
-        private void instHelloWorld(byte[] data)       // testing function
-        { Logging.LogWarning("Hello from the server-side!"); }
-
-
-        [ServerInstruction(0)]
-        private void instAcquireChannel(byte[] data)   // acquire channel 
+        [Instruction(Instructions.HelloWorld)]
+        private void instHelloWorld(byte[] data)       // testing function 
         {
-            byte channelId = data[2];
+            if (data != null && data.Length > 0) Logging.LogWarning("Hello from the server-side! data: " + Bytes.ToString(data));
+            else Logging.LogWarning("Hello from the server-side! No data was given...");
         }
 
 
-        [ServerInstruction(1)]
-        private void instReleaseChannel(byte[] data)    // release channel 
-        { 
-            Logging.Log("Hello, server!"); 
+        [Instruction(Instructions.Connect)]
+        private void instConnect(byte[] data)        // connect 
+        {
+
         }
 
+
+        [Instruction(Instructions.Disconnect)]
+        private void instDisconnect(byte[] data)        // disconnect 
+        {
+            OnDisconnect();
+            onDisconnect?.Invoke();
+        }
 
 
         #endregion
@@ -137,14 +183,18 @@ namespace Client
 
 
 
-        private Dictionary<byte, Channel> channels = new Dictionary<byte, Channel>();    // communication channels
-        private Channel systemChannel;                                                   // system channel
-
-        private Dictionary<short, Action<byte[]>> sentInstructions;        // dictionary of sent instructions
+        private Dictionary<short, Action<byte[]>> instructions;        // dictionary of instructions
+     
 
         // connection address
         private IPAddress ip = IPAddress.Parse("127.0.0.1");
         private int port = 23852;
+
+
+        // vars for supportiong instructions buffering
+        private bool bufferInstructions = false;
+        private Stack<KeyValuePair<short, byte[]>> instructionsToExecute = new Stack<KeyValuePair<short, byte[]>>();
+        private object instructionsLock = new object();
 
 
 
@@ -155,53 +205,133 @@ namespace Client
 
 
 
-        private void Awake()     // initialize server on game construction 
+        private void EndSession()
         {
-            Connect();
+            Logging.LogDeny("Client " + clientId + " on address " + tcp.Client.RemoteEndPoint + " ended it's session.");
+
+            stream.Close();
+            tcp.Close();
         }
 
-        private void RegisterInstructionsDelegates()    // bind instructions received from system channel to the instructions methods 
+        protected override void NetworkUpdate() 
         {
-            /*
-            super puper large line which:
-                1. gets non-public methods from *Client*, which are marked with *ServerSentAttribute*
-                2. gets delegates to the gotten functions from their *MethodInfo*'s
-                3. stores them to *sentInstructions*-dictionary, where keys are Ids of *ServerSentAttribute*, and values are delegates themselves
-            */
-            sentInstructions = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.GetCustomAttribute(typeof(ServerInstructionAttribute)) != null).Select(x => (x.CreateDelegate(typeof(Action<byte[]>), this) as Action<byte[]>)).ToDictionary(x => (x.GetMethodInfo().GetCustomAttribute(typeof(ServerInstructionAttribute)) as ServerInstructionAttribute).id);
-
-
-            sentInstructions[-1](null); // debugging
+            ExecuteOne();
         }
 
-        private void OnDataReceive(IAsyncResult result)     // function that gets invoked every time data comes to you 
+
+        private void OnHeaderReceive(IAsyncResult result)     // gets invoked every time data is available, and processes it 
         {
-            // get channel to which we are reading
-            stream.EndRead(result);
-
-            // get channel to which we are reading
-            byte channel = receiveTempBuffer[0];
-            Channel currentChannel = null;
-            lock (this) currentChannel = channels[channel];
-
-            // perform data receiving and buffering
-            lock (currentChannel)
+            try
             {
-                stream.Read(receiveTempBuffer, 0, 4);
-                int dataSize = Converter.ToInt(receiveTempBuffer);
+                // read header bytes, get their count, and add them to the general read bytes sum
+                int currentlyReadBytesCount = stream.EndRead(result);
+                if (currentlyReadBytesCount == 0) throw new ClientDisconnectedException();
+                readBytesCount += currentlyReadBytesCount;
 
-                byte[] data = new byte[dataSize];
-                stream.Read(data, 0, dataSize);
 
-                currentChannel.dataBuffer.Push(data);
+                // if we've read too few bytes, repeat reading process, until we read all of the necessary bytes
+                if (readBytesCount < 6)
+                {
+                    stream.BeginRead(headerBuffer, readBytesCount, (6 - readBytesCount), OnHeaderReceive, null);
+                    return;
+                }
+
+
+                /// if we read enough bytes, reset bytes count to 0 (next time when we read, we'll need it to be 0) and decode all header data
+
+
+                readBytesCount = 0;
+
+                // decode and store header data
+                instructionId = Bytes.ToShort(headerBuffer);
+                dataSize = Bytes.ToInt(headerBuffer, 2);
+
+                if (dataSize > 0)
+                {
+                    // create buffer for the incoming data
+                    dataBuffer = new byte[dataSize];
+
+                    // begin reading the incoming data
+                    stream.BeginRead(dataBuffer, 0, dataSize, OnDataReceive, null);
+                }
+                else
+                {
+                    dataBuffer = null;
+                    HandleInstruction();
+
+                    // begin reading the next packet, or disconnect, depending on the client stste
+                    stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
+                }
             }
-
-
-            // start waiting for the next data
-            stream.BeginRead(receiveTempBuffer, 0, 1, OnDataReceive, null);
+            catch (ClientDisconnectedException) { EndSession(); }
+            catch (IOException) { EndSession(); }
+            catch (Exception exc)
+            {
+                Logging.LogError(exc);
+                Disconnect();
+                EndSession();
+            }
         }
-        private byte[] receiveTempBuffer = new byte[4];
+        byte[] headerBuffer = new byte[6];
+        short instructionId = -1;
+        int dataSize = 0;
 
+
+        private void OnDataReceive(IAsyncResult result)
+        {
+            try
+            {
+                // read data bytes, and get their count
+                int currentlyReadBytesCount = stream.EndRead(result);
+                if (currentlyReadBytesCount == 0) throw new ClientDisconnectedException();
+                readBytesCount += currentlyReadBytesCount;
+
+                // if we read too few bytes, repeat reading process, until we read all of the necessary bytes
+                if (readBytesCount < dataSize)
+                {
+                    stream.BeginRead(dataBuffer, readBytesCount, (dataSize - readBytesCount), OnDataReceive, null);
+                    return;
+                }
+
+
+                /// if we read enough bytes, reset bytes count to 0 (next time when we read, we'll need it to be 0) and invoke received instruction
+
+
+                readBytesCount = 0;
+
+                // invoke instruction and the corresponding event
+                HandleInstruction();
+
+
+                // begin reading the next packet, or disconnect, depending on the client stste
+                stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
+            }
+            catch (ClientDisconnectedException) { EndSession(); }
+            catch (IOException) { EndSession(); }
+            catch (Exception exc)
+            {
+                Logging.LogError(exc);
+                Disconnect();
+                EndSession();
+            }
+        }
+        byte[] dataBuffer = null;
+        int readBytesCount = 0;
+
+        private void HandleInstruction()
+        {
+            lock (instructionsLock)
+            {
+                if (bufferInstructions)
+                {
+                    instructionsToExecute.Push(new KeyValuePair<short, byte[]>(instructionId, dataBuffer));
+                }
+                else
+                {
+                    instructions[instructionId](dataBuffer);
+                }
+            }
+        }
 
 
         #endregion
@@ -211,65 +341,14 @@ namespace Client
 
 
 
-        public class Channel
-        {
-            public Channel(byte identifier) { this.client = Client.client; id = identifier; }
-
-
-            public Stack<byte[]> dataBuffer = new Stack<byte[]>();
-            protected Client client;
-            public byte id = 0;
-
-
-
-            ///     INTERACTION METHODS     ///
-
-
-
-            // clear all buffered messages in this channel
-            public virtual void ClearBuffer() { lock (this) dataBuffer.Clear(); }
-
-
-            // send data through this channel
-            public void Send(byte[] data)
-            {
-                lock (this)
-                {
-                    sendTempBuffer[0] = id;
-                    client.stream.Write(sendTempBuffer, 0, 1);
-                    client.stream.Write(Converter.ToBytes(data.Length), 0, 4);
-                    client.stream.Write(data, 0, data.Length);
-                }
-            }
-            byte[] sendTempBuffer = new byte[1];
-
-
-            // receive data from this channel
-            public byte[] Recv(int timeout = -1)
-            {
-                lock (this)
-                {
-                    // if data is already present, we'll get it
-                    if (dataBuffer.Count > 0) return dataBuffer.Pop();
-
-                    // if not, we'll wait for it *timeout* milliseconds. *timeout = -1* means wait forever.
-                    if (Monitor.Wait(this, timeout)) return dataBuffer.Pop();
-
-                    // if no data within specified time, stop waiting and return null
-                    return null;
-                }
-            }
-        }
-
-
         [AttributeUsage(AttributeTargets.Method)]
-        public class ServerInstructionAttribute : Attribute
+        public class InstructionAttribute : Attribute
         {
             public short id;
 
-            public ServerInstructionAttribute(short instructionId)
+            public InstructionAttribute(Instructions instructionId)
             {
-                this.id = instructionId;
+                id = (short)instructionId;
             }
         }
 
@@ -277,7 +356,7 @@ namespace Client
 
         #endregion
         //--------------------------------------------------
-    }
+}
 
 
 

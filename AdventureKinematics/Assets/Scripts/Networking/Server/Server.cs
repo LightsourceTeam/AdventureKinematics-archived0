@@ -1,105 +1,119 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System;
+using SourceExtensions;
 
-namespace Server
+
+namespace Networking.Server
 {
     public class Server : MonoBehaviour
     {
+        //--------------------------------------------------
+        #region VARIABLES
+        /// public variables declaration
+
+
+
+        /// initializing server instance
         public static Server server;
 
+        /// initializing connection variables & client dictionary
         public static IPAddress ip = IPAddress.Parse("127.0.0.1");
         public static int port = 23852;
-        public static Dictionary<int, Client> clients = new Dictionary<int, Client>();
 
+        public static Dictionary<int, Client> clients = new Dictionary<int, Client>();
         private TcpListener tcpListener;
 
-
-        public event Action onServerInit;
-        public event Action onServerShutdown;
-        public event Action<Client> onClientConnect;
-        public event Action<Client> onClientDisconnect;
+        bool isAcceptingNewClients = false;
 
 
-        public bool shutdownState { get; private set; } = false;
-        public bool initState { get; private set; } = false;
+        #endregion
+        //--------------------------------------------------
+        #region SERVER INITIALIZING
+        /// initializing server
 
-        private void Awake()
+
+
+        private void Awake()       // unity function for starting server 
         {
             Raise();
-        }
+        }           
 
-
-        public void Raise()
+        public void Raise()        // reises (starts) server 
         {
+            isAcceptingNewClients = true;
+
             // setting active instance of the server
-            if(server == null) server = this;
-            else if(server != this) Logging.LogError(this + ": You can not have two servers run simultaneously!");
-            else Logging.LogWarning(this +": No need to set it as active server - it already has this value");
+            if (server == null) server = this;
+            else if (server != this) Logging.LogError(this + ": You can not have two servers run simultaneously!");
+            else Logging.LogWarning(this + ": No need to set it as active server - it already has this value");
 
             Logging.Log("\n\n");
 
             // initilaize tcp listener and start accepting clients
-            tcpListener = new TcpListener(ip, port);          
+            tcpListener = new TcpListener(ip, port);
             Logging.LogInfo("Starting server on " + ip + " " + port + "...");
             tcpListener.Start();
 
             Logging.LogInfo("Start accepting clients on " + ip + " " + port + "...");
-            tcpListener.BeginAcceptTcpClient(new AsyncCallback(ConnectCallback), null);
+            tcpListener.BeginAcceptTcpClient(ConnectCallback, null);
 
-            onClientConnect += ClientHandler.InitializeClientHandler;
+        }            
 
-            initState = true;
-            onServerInit?.Invoke();
-        }
+
+
+        #endregion
+        //--------------------------------------------------
+        #region ADMINISTRATOR FUNCTIONS
+        /// initializing administator functions
+
+
 
         public void Shutdown()
         {
-            Logging.Log("Warning: Server was put into shutdown state! Waiting until connected clients leave...");
-            
-            shutdownState = true;
-            onServerShutdown?.Invoke();
+            Logging.Log("Warning: Server has been put into shutdown state! Waiting until connected clients leave...");
+
         }
 
-        public void ConnectCallback(IAsyncResult result)
+
+
+        #endregion
+        //--------------------------------------------------
+        #region INTERNAL METHODS
+        /// these methods will be executed only here
+
+
+
+        private void ConnectCallback(IAsyncResult result)
         {
             // accept new client, and start listening for the new one.
-            TcpClient client = AcceptClient(result);
+            TcpClient tcp = tcpListener.EndAcceptTcpClient(result);
 
             // alert that new client has connected
-            Logging.LogInfo("Incoming Connection: " + client.Client.RemoteEndPoint);
-            AddClient(new Client(), client);
+            Logging.LogAccept("Incoming Connection: " + tcp.Client.RemoteEndPoint);
 
+            Client client = new Client();
+
+
+            lock (this) clients.Add(lastId, client);
+            client.Connect(tcp, lastId);
+            lastId++;
+
+            if (isAcceptingNewClients) tcpListener.BeginAcceptTcpClient(ConnectCallback, null);
         }
-
-        public TcpClient AcceptClient(IAsyncResult result)
-        {
-            // accept new client, and start listening for the new one.
-            TcpClient client = tcpListener.EndAcceptTcpClient(result);
-            if(!shutdownState) tcpListener.BeginAcceptTcpClient(new AsyncCallback(ConnectCallback), null);
-
-            return client;
-        }
-         
-        
         private int lastId = 0;
-        public void AddClient(Client client, TcpClient newTcp)
-        {
-            clients.Add(lastId, client);
-            client.Connect(newTcp, lastId++);
 
-            onClientConnect?.Invoke(client);
-        }
 
         public void RemoveClient(Client client)
         {
-            clients.Remove(client.id);
-            onClientDisconnect?.Invoke(client);
+            lock(this) clients.Remove(client.clientId);
+
         }
 
+
+        #endregion
+        //--------------------------------------------------
     }
 }

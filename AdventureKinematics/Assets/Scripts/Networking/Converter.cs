@@ -10,7 +10,7 @@ using System;
 public class Converter : MonoBehaviour
 {
     // To Type
-    public static int ToInt(byte[] data, int startIndex=0)
+    public static int ToInt(byte[] data, int startIndex = 0)
     {
         return BitConverter.ToInt32(data, startIndex);
     }
@@ -53,7 +53,7 @@ public class Converter : MonoBehaviour
     }
 
     public static byte[] ToBytes(long data)
-    { 
+    {
         return BitConverter.GetBytes(data);
     }
 
@@ -72,4 +72,14 @@ public class Converter : MonoBehaviour
         return BitConverter.GetBytes(data);
     }
 
+    public static byte[] ToBytes(byte data) { return new byte[] { data }; }
+
+    public static byte[] Combine(params byte[][] arrays)
+    {
+        byte[] combined = new byte[0];
+
+        foreach (byte[] array in arrays) Buffer.BlockCopy(array, 0, combined, combined.Length, array.Length);
+
+        return combined;
+    }
 }
