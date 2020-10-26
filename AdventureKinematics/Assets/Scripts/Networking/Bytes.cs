@@ -5,9 +5,10 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System;
+using System.Linq;
 
 
-public class Converter : MonoBehaviour
+public class Bytes : MonoBehaviour
 {
     // To Type
     public static int ToInt(byte[] data, int startIndex = 0)
@@ -30,9 +31,33 @@ public class Converter : MonoBehaviour
         return BitConverter.ToSingle(data, startIndex);
     }
 
+    public static string ToString(byte[] data, int startIndex, int count)
+    {
+        if (data == null || data.Length == 0) throw new ArgumentException("Got an empty byte array!");
+        if (count == -1) count = data.Length - startIndex;
+        
+        return Encoding.Unicode.GetString(data, startIndex, count); ;
+    }
+
+    public static string ToString(byte[] data, out int returnedStringCount, int startIndex = 0)
+    {
+        if (data == null || data.Length == 0) throw new ArgumentException("Got an empty byte array!");
+
+
+        returnedStringCount = ToInt(data);
+
+        return Encoding.Unicode.GetString(data, startIndex + 4, returnedStringCount);
+    }
+
     public static string ToString(byte[] data, int startIndex = 0)
     {
-        return BitConverter.ToString(data, startIndex);
+        if (data == null || data.Length == 0) throw new ArgumentException("Got an empty byte array!");
+
+
+        int returnedStringCount = ToInt(data);
+
+        return Encoding.Unicode.GetString(data, startIndex + 4, returnedStringCount);
+
     }
 
     public static bool ToBool(byte[] data, int startIndex = 0)
@@ -62,9 +87,15 @@ public class Converter : MonoBehaviour
         return BitConverter.GetBytes(data);
     }
 
-    public static byte[] ToBytes(string data)
+    public static byte[] ToBytes(string data, bool autosizedString = true)
     {
-        return Encoding.UTF8.GetBytes(data);
+        if (data == null || data.Length == 0) throw new ArgumentException("Got an empty string!");
+
+        byte[] dataBytes = Encoding.Unicode.GetBytes(data);
+        
+        if (autosizedString) dataBytes = ToBytes(dataBytes.Length).Concat(dataBytes).ToArray();
+
+        return dataBytes;
     }
 
     public static byte[] ToBytes(bool data)
@@ -76,9 +107,15 @@ public class Converter : MonoBehaviour
 
     public static byte[] Combine(params byte[][] arrays)
     {
+
+        if (arrays.Length == 0) return null;
+        if (arrays.Length == 1) return arrays[0];
+
+
         byte[] combined = new byte[0];
 
-        foreach (byte[] array in arrays) Buffer.BlockCopy(array, 0, combined, combined.Length, array.Length);
+
+        foreach (byte[] array in arrays) combined = combined.Concat(array).ToArray();
 
         return combined;
     }

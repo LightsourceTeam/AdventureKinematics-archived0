@@ -3,8 +3,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SourceExtensions;
 
-public class Controller : CustomMonoBehaviour
+    public class Controller : CustomMonoBehaviour
 {
     [NonSerialized] public MainController mainController;
     [NonSerialized] public Joystick joystick;

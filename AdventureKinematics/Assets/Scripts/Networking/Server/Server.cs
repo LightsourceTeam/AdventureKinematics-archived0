@@ -4,6 +4,8 @@ using System.Net;
 using System.Net.Sockets;
 using System;
 using SourceExtensions;
+using System.Reflection;
+using System.Linq;
 
 
 namespace Networking.Server
@@ -29,6 +31,10 @@ namespace Networking.Server
         bool isAcceptingNewClients = false;
 
 
+        public static Dictionary<short, MethodInfo> instructions { get; private set; }
+
+
+
         #endregion
         //--------------------------------------------------
         #region SERVER INITIALIZING
@@ -38,6 +44,7 @@ namespace Networking.Server
 
         private void Awake()       // unity function for starting server 
         {
+            RegisterAllInstructions();
             Raise();
         }           
 
@@ -74,7 +81,6 @@ namespace Networking.Server
         public void Shutdown()
         {
             Logging.Log("Warning: Server has been put into shutdown state! Waiting until connected clients leave...");
-
         }
 
 
@@ -109,7 +115,16 @@ namespace Networking.Server
         public void RemoveClient(Client client)
         {
             lock(this) clients.Remove(client.clientId);
+        } 
 
+        public void RegisterAllInstructions()
+        {
+            if (instructions != null) return;
+
+            instructions = (from type in Assembly.GetExecutingAssembly().GetTypes()
+                            from method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                            where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
+                            select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
         }
 
 

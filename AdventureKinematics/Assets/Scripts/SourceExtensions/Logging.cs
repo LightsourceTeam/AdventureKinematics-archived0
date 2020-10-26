@@ -30,24 +30,12 @@ namespace SourceExtensions
 #endif
         }
 
-        public static void LogError(object message)
-        {
-#if UNITY_SERVER
-            ConsoleColor color = System.Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("  [x]  " + message);
-            Console.ForegroundColor = color;
-#else
-            Debug.LogError(message);
-#endif
-        }
-
         public static void LogAccept(object message)
         {
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("  [v]  " + message);
+            Console.WriteLine("  [+]  " + message);
             Console.ForegroundColor = color;
 #else
             Debug.Log("<color=green>" + message + "</color>");
@@ -59,7 +47,7 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("  [x]  " + message);
+            Console.WriteLine("  [-]  " + message);
             Console.ForegroundColor = color;
 #else
             Debug.Log("<color=red>" + message + "</color>");
@@ -74,7 +62,32 @@ namespace SourceExtensions
             Console.WriteLine("  [!]  " + message);
             Console.ForegroundColor = color;
 #else
+            // #7C0A02
             Debug.LogWarning(message);
+#endif
+        }
+
+        public static void LogError(object message)
+        {
+#if UNITY_SERVER
+            ConsoleColor color = System.Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("  [x]  " + message);
+            Console.ForegroundColor = color;
+#else
+            Debug.LogError(message);
+#endif
+        }
+
+        public static void LogCritical(object message)
+        {
+#if UNITY_SERVER
+            ConsoleColor color = System.Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine("  [X]  " + message);
+            Console.ForegroundColor = color;
+#else
+            Debug.LogError("<color=#7C0A02>" + message + "</color>");
 #endif
         }
     }

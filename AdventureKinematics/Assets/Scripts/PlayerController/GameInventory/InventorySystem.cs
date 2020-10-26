@@ -7,19 +7,21 @@ using UnityEngine.UI;
 
 public class InventorySystem : MonoBehaviour
 {
-    public GameObject slotPrefab;
+    public InventorySlot slotPrefab;
     public Transform slotParent;
 
-    public GameObject blueprintPrefab;
-    public Transform blueprintParent;
 
-    [NonSerialized] public List<InventorySlot> fastAccessSlots;
+    public BlueprintChain chainPrefab;
+    public Transform chainsParent;
+
+    [NonSerialized] public List<InventorySlot> activeSlots;
     [NonSerialized] public List<InventorySlot> inventorySlots;
-    [NonSerialized] public List<InventorySlot> craftSlots;
-    [NonSerialized] public List<BlueprintSlot> blueprintSlots;
+    [NonSerialized] public List<BlueprintChain> blueprintSlots;
 
     [NonSerialized] public InventorySlot selectedSlot;
-    [NonSerialized] public BlueprintSlot selectedBlueprintSlot;
+    [NonSerialized] public BlueprintChain selectedBlueprintChain;
+
+    [NonSerialized] public List<InventorySlot> craftSlots;
 
     private int slotsCount = 20;
 
@@ -29,38 +31,39 @@ public class InventorySystem : MonoBehaviour
     {
         mainController = controller;
 
-        fastAccessSlots = new List<InventorySlot>(slotsCount);
+        activeSlots = new List<InventorySlot>(4);
         for (int i = 0; i < 4; i++)
         {
-            InventorySlot slot = Instantiate(slotPrefab, slotParent).GetComponent<InventorySlot>();
-            fastAccessSlots.Add(slot);
+            InventorySlot slot = Instantiate(slotPrefab, slotParent);
+            activeSlots.Add(slot);
             slot.inventorySystem = this;
             slot.gameObject.SetActive(true);
-        } 
+        }
 
         inventorySlots = new List<InventorySlot>(slotsCount);
-        for (int i = 0; i < 4; i++)
-        { 
-            InventorySlot slot = Instantiate(slotPrefab, slotParent).GetComponent<InventorySlot>();
+        for (int i = 0; i < slotsCount; i++)
+        {
+            InventorySlot slot = Instantiate(slotPrefab, slotParent);
             inventorySlots.Add(slot);
             slot.inventorySystem = this;
             slot.gameObject.SetActive(true);
         }
 
-        blueprintSlots = new List<BlueprintSlot>(4);
+        blueprintSlots = new List<BlueprintChain>(4);
         for (int i = 0; i < 4; i++)
         {
-            GameObject slot = Instantiate(blueprintPrefab, blueprintParent);
-            blueprintSlots.Add(slot.GetComponent<BlueprintSlot>());
-            slot.SetActive(true);
+            BlueprintChain chain = Instantiate(chainPrefab, chainsParent);
+            blueprintSlots.Add(chain);
+            chain.gameObject.SetActive(true);
         }
 
-        selectedSlot = fastAccessSlots[0];
+        selectedSlot = activeSlots[0];
     }
 
     protected void Update()
     {
-        foreach (InventorySlot slot in fastAccessSlots)
+        // call events on items
+        foreach (InventorySlot slot in activeSlots)
         {
             if  (slot.item != null)
             {
@@ -72,7 +75,10 @@ public class InventorySystem : MonoBehaviour
 
     protected void FixedUpdate()
     {
-        foreach (InventorySlot slot in fastAccessSlots)
+
+
+        // call events on items
+        foreach (InventorySlot slot in activeSlots)
         {
             if (slot.item != null)
             {
@@ -83,7 +89,10 @@ public class InventorySystem : MonoBehaviour
 
     protected void LateUpdate()
     {
-        foreach (InventorySlot slot in fastAccessSlots)
+
+
+        // call events on items
+        foreach (InventorySlot slot in activeSlots)
         {
             if (slot.item != null)
             {
@@ -92,30 +101,25 @@ public class InventorySystem : MonoBehaviour
         }
     }
 
-    public void ChangeSlot(InventorySlot invSlot)
+    public void RplaceItemFromSlot(InventorySlot invSlot)
     {
         InventorySlot tempSlot = invSlot;
-        float minMagnitude = -1;
+        float minMagnitude = float.MaxValue;
 
         foreach(InventorySlot invenSlot in inventorySlots)
         {
-            if (minMagnitude < 0) minMagnitude = (invenSlot.itemHolder.transform.position - tempSlot.gameObject.transform.position).magnitude;
-            if(minMagnitude > (invenSlot.itemHolder.transform.position - tempSlot.gameObject.transform.position).magnitude)
-            {
-                tempSlot = invenSlot;
-            }
+            if(minMagnitude > (invenSlot.itemHolder.transform.position - tempSlot.gameObject.transform.position).magnitude) tempSlot = invenSlot;
         }
 
-        InventorySlot T;
-        T = tempSlot;
+        GameItem T = tempSlot.item;
         tempSlot.item = invSlot.item;
-        invSlot.item = T.item;
+        invSlot.item = T;
     }
 
-    public void ChangeActiveBlueprint(BlueprintSlot blueprint)
+
+    public void ResetBlueprintSelection()
     {
-        selectedBlueprintSlot = blueprint;
-        craftSlots.Clear();
+
     }
 
 }

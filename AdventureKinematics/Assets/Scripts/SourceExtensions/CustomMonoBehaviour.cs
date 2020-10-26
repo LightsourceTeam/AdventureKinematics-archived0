@@ -8,9 +8,9 @@ namespace SourceExtensions
 {
     public class CustomMonoBehaviour : MonoBehaviour
     {
-        protected virtual void OnEnable() { CustomMonoEventDispatcher.earlyUpdate += EarlyUpdate; CustomMonoEventDispatcher.networkUpdate += NetworkUpdate; }
+        protected virtual void OnEnable() { CustomEventSystem.onEarlyUpdate += EarlyUpdate; CustomEventSystem.onNetworkUpdate += NetworkUpdate; CustomEventSystem.onBeforeDisconnect += BeforeDisconnect; }
 
-        protected virtual void OnDisable() { CustomMonoEventDispatcher.earlyUpdate -= EarlyUpdate; CustomMonoEventDispatcher.networkUpdate -= NetworkUpdate; }
+        protected virtual void OnDisable() { CustomEventSystem.onEarlyUpdate -= EarlyUpdate; CustomEventSystem.onNetworkUpdate -= NetworkUpdate; CustomEventSystem.onBeforeDisconnect -= BeforeDisconnect; }
 
         // gets called every time an instruction from server gets executed
         protected virtual void NetworkUpdate()
@@ -29,6 +29,9 @@ namespace SourceExtensions
 
         // gets called in the end of the frame
         protected virtual void LateUpdate() { }
+
+        // gets called before disconnection completes
+        protected virtual void BeforeDisconnect() { }
 
 
     }

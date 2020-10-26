@@ -26,7 +26,7 @@ public class GrabbingHook : GameItem
             if(lastHit) 
             {
                 controllerToUse = controller;
-
+                
                 rope.gameObject.SetActive(true);
                 rope.EndPoint.transform.parent = controllerToUse.mainController.itemController.itemHandler.transform;
                 rope.StartPoint.transform.position = lastHit.point;

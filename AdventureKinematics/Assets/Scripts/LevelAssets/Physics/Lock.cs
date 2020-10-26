@@ -3,35 +3,38 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Lock : MonoBehaviour
+namespace GameObjects
 {
-    public Switch lockSwitch;
-    public Rigidbody2D ObjectToLock;
-    public bool isBlocked;
-
-    private void Start()
+    public class Lock : MonoBehaviour
     {
+        public Switch lockSwitch;
+        public Rigidbody2D ObjectToLock;
+        public bool isBlocked;
 
-    }
-
-    private void Update()
-    {
-        if(lockSwitch.isChecked != isBlocked)
+        private void Start()
         {
-            BlockOrRelease();
-            isBlocked = !isBlocked;
+
         }
-    }
 
-    private void BlockOrRelease()
-    {
-        if(lockSwitch.isChecked)
+        private void Update()
         {
-            ObjectToLock.bodyType = RigidbodyType2D.Kinematic;
+            if (lockSwitch.isChecked != isBlocked)
+            {
+                BlockOrRelease();
+                isBlocked = !isBlocked;
+            }
         }
-        else
+
+        private void BlockOrRelease()
         {
-            ObjectToLock.bodyType = RigidbodyType2D.Dynamic;
+            if (lockSwitch.isChecked)
+            {
+                ObjectToLock.bodyType = RigidbodyType2D.Kinematic;
+            }
+            else
+            {
+                ObjectToLock.bodyType = RigidbodyType2D.Dynamic;
+            }
         }
     }
 }

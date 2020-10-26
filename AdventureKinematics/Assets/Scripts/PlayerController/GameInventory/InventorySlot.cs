@@ -19,7 +19,7 @@ public class InventorySlot : MonoBehaviour, IPointerClickHandler, IPointerUpHand
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        inventorySystem.ChangeSlot(this);   
+        inventorySystem.RplaceItemFromSlot(this);   
     }
 
 }

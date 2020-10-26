@@ -15,13 +15,13 @@ public class SwitchSystem : Switch
             if (switchButton.isChecked)
             {
                 checkAmount++;
-                Debug.Log("Check Amount: " + checkAmount);
+                UnityEngine.Debug.Log("Check Amount: " + checkAmount);
             }
         }
         if(checkAmount == unlockItems.Count)
         {
             isChecked = true;
-            Debug.Log("isFinished State: " + isChecked);
+            UnityEngine.Debug.Log("isFinished State: " + isChecked);
         }
     }
 }

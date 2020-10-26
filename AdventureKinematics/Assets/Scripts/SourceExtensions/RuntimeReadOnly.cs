@@ -1,33 +1,40 @@
-﻿#if UNITY_EDITOR
-
-using UnityEngine;
-using UnityEditor;
-
-public class RuntimeReadOnly : PropertyAttribute { }
+﻿
 
 
-[CustomPropertyDrawer(typeof(RuntimeReadOnly))]
-public class RuntimeReadOnlyDrawer : PropertyDrawer
+namespace SourceExtensions
 {
-    // Necessary since some properties tend to collapse smaller than their content
-    public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-    {
-        return EditorGUI.GetPropertyHeight(property, label, true);
-    }
+#if UNITY_EDITOR
 
-    // Draw a disabled property field
-    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+    using UnityEngine;
+    using UnityEditor;
+
+
+    public class RuntimeReadOnly : PropertyAttribute { }
+
+
+    [CustomPropertyDrawer(typeof(RuntimeReadOnly))]
+    public class RuntimeReadOnlyDrawer : PropertyDrawer
     {
-        GUI.enabled = !Application.isPlaying;
-        EditorGUI.PropertyField(position, property, label, true);
-        GUI.enabled = true;
+        // Necessary since some properties tend to collapse smaller than their content
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return EditorGUI.GetPropertyHeight(property, label, true);
+        }
+
+        // Draw a disabled property field
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            GUI.enabled = !Application.isPlaying;
+            EditorGUI.PropertyField(position, property, label, true);
+            GUI.enabled = true;
+        }
     }
-}
 
 #else
 
-using System;
+    using System;
 
-public class RuntimeReadOnly : Attribute { }
+    public class RuntimeReadOnly : Attribute { }
 
 #endif
+}
