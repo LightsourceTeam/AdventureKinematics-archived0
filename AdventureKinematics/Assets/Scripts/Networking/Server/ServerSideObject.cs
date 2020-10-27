@@ -18,10 +18,11 @@ namespace Networking.Server
             client.onBeforeForceDisconnect -= BeforeForceDisconnect;
         } 
 
-        public void Delete()
+        public virtual void Delete()
         {
             client.onBeforeDisconnect -= BeforeDisconnect;
             client.onBeforeForceDisconnect -= BeforeForceDisconnect;
+            
             client = null;
         }
 

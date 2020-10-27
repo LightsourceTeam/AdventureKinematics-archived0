@@ -118,5 +118,17 @@ public class Bytes : MonoBehaviour
         foreach (byte[] array in arrays) combined = combined.Concat(array).ToArray();
 
         return combined;
+    } 
+
+    public class BytePack
+    {
+        int lastIndex = 0;
+        byte[] data;
+
+        public BytePack(byte[] data, int index = 0) { this.data = data; lastIndex = index; } 
+
+
     }
+
+
 }

@@ -173,8 +173,7 @@ namespace Networking.Client
             Disconnect();
         }
 
-
-        private void InTheEnd()
+        private void Delete()
         {
             Logging.LogDeny("Client " + clientId + " on address " + tcp.Client.RemoteEndPoint + " ended it's session.");
 
@@ -293,13 +292,13 @@ namespace Networking.Client
                     stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
                 }
             }
-            catch (ClientDisconnectedException) { InTheEnd(); }
-            catch (IOException) { InTheEnd(); }
+            catch (ClientDisconnectedException) { Delete(); }
+            catch (IOException) { Delete(); }
             catch (Exception exc)
             {
                 Logging.LogError(exc);
                 Disconnect();
-                InTheEnd();
+                Delete();
             }
         }
         byte[] headerBuffer = new byte[6];
@@ -336,13 +335,13 @@ namespace Networking.Client
                 // begin reading the next packet, or disconnect, depending on the client stste
                 stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
             }
-            catch (ClientDisconnectedException) { InTheEnd(); }
-            catch (IOException) { InTheEnd(); }
+            catch (ClientDisconnectedException) { Delete(); }
+            catch (IOException) { Delete(); }
             catch (Exception exc)
             {
                 Logging.LogError(exc);
                 Disconnect();
-                InTheEnd();
+                Delete();
             }
         }
         byte[] dataBuffer = null;

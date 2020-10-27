@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Networking.Server
 {
-    public class Client : ServerSideObject
+    public class Client : ServerSideObject, IDisposable
     {
         //--------------------------------------------------
         #region VARIABLES
@@ -47,11 +47,7 @@ namespace Networking.Server
             this.tcp = tcp;
             clientId = id;
             stream = tcp.GetStream();
-  
 
-            // signalize an event before client starts
-            Start();
-            onStart?.Invoke();
 
             // begin data reading
             stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
@@ -163,7 +159,6 @@ namespace Networking.Server
 
 
 
-        public event Action onStart;
         public event Action onBeforeDisconnect;
         public event Action onBeforeForceDisconnect;
 
@@ -181,14 +176,21 @@ namespace Networking.Server
             registeredInstructionClasses.Clear();
         }
 
-        protected void InTheEnd()
+        public override void Delete()
         {
             Logging.LogDeny("Client " + clientId + " on address " + tcp.Client.RemoteEndPoint + " ended it's session.");
 
             registeredInstructionClasses.Clear();
 
+            tcp.Client.Dispose();
+
             stream.Close();
             tcp.Close();
+
+            stream = null;
+            tcp = null;
+
+            base.Delete();
 
             Server.server.RemoveClient(this);
         }
@@ -250,6 +252,7 @@ namespace Networking.Server
         /// inaccessible methods, that are responsible for internal client functioning
 
 
+
         // accepts data header
         private void OnHeaderReceive(IAsyncResult result)     // gets invoked every time data is available, and processes it 
         {
@@ -295,13 +298,13 @@ namespace Networking.Server
                     stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
                 }
             }
-            catch (ClientDisconnectedException) { InTheEnd(); }
-            catch (IOException) { InTheEnd(); }
+            catch (ClientDisconnectedException) { Delete(); }
+            catch (IOException) { Delete(); }
             catch (Exception exc)
             {
                 Logging.LogError(exc);
                 Disconnect();
-                InTheEnd();
+                Delete();
             }
         }
         byte[] headerBuffer = new byte[6];
@@ -338,13 +341,13 @@ namespace Networking.Server
                 // begin reading the next packet, or disconnect, depending on the client stste
                 stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
             }
-            catch (ClientDisconnectedException) { InTheEnd(); }
-            catch (IOException) { InTheEnd(); }
+            catch (ClientDisconnectedException) { Delete(); }
+            catch (IOException) { Delete(); }
             catch (Exception exc)
             {
                 Logging.LogError(exc);
                 Disconnect();
-                InTheEnd();
+                Delete();
             }
         }
         byte[] dataBuffer = null;
@@ -372,6 +375,7 @@ namespace Networking.Server
         }
 
 
+
         #endregion
         //--------------------------------------------------
         #region CLASSES
@@ -389,6 +393,8 @@ namespace Networking.Server
                 id = (short)instructionId;
             }
         }
+
+
 
         #endregion
         //--------------------------------------------------

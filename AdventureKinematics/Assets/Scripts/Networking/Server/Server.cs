@@ -111,7 +111,6 @@ namespace Networking.Server
         }
         private int lastId = 0;
 
-
         public void RemoveClient(Client client)
         {
             lock(this) clients.Remove(client.clientId);
@@ -126,6 +125,7 @@ namespace Networking.Server
                             where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
                             select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
         }
+
 
 
         #endregion
