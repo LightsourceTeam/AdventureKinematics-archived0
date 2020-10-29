@@ -8,28 +8,66 @@ namespace Networking.Server
 {
     public class ServerSideObject
     {
+        //--------------------------------------------------
+        #region VARIABLES
+
+
+
         protected Client client;
 
-        public ServerSideObject(Client client) 
+
+
+        #endregion
+        //--------------------------------------------------
+        #region INTERNAL AND INTERACTION METHODS
+
+
+
+        protected ServerSideObject() { }
+
+        protected void Initialize(Client client)
         {
             this.client = client;
 
             client.onBeforeDisconnect += BeforeDisconnect;
-            client.onBeforeForceDisconnect -= BeforeForceDisconnect;
-        } 
-
-        public virtual void Delete()
-        {
-            client.onBeforeDisconnect -= BeforeDisconnect;
-            client.onBeforeForceDisconnect -= BeforeForceDisconnect;
-            
-            client = null;
+            client.onBeforeForceDisconnect += BeforeForceDisconnect;
+            client.onStart += Start;
         }
 
-        protected ServerSideObject() { }
+        public T Instantiate<T>() where T : ServerSideObject, new() // 
+        {
+            T newInstance = new T();
+            newInstance.Initialize(client);
+
+            return newInstance;
+        }
+
+        public virtual void Destroy()
+        {
+            client = null;
+
+            client.onBeforeDisconnect -= BeforeDisconnect;
+            client.onBeforeForceDisconnect -= BeforeForceDisconnect;
+            client.onStart -= Start; 
+        }
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region EVENTS
+
+
+
+        protected virtual void Start() { }
 
         protected virtual void BeforeDisconnect() { }
 
         protected virtual void BeforeForceDisconnect() { }
+
+
+
+        #endregion
+        //--------------------------------------------------
     }
 }

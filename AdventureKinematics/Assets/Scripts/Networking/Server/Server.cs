@@ -31,9 +31,6 @@ namespace Networking.Server
         bool isAcceptingNewClients = false;
 
 
-        public static Dictionary<short, MethodInfo> instructions { get; private set; }
-
-
 
         #endregion
         //--------------------------------------------------
@@ -44,7 +41,7 @@ namespace Networking.Server
 
         private void Awake()       // unity function for starting server 
         {
-            RegisterAllInstructions();
+            Client.RegisterAllInstructions();
             Raise();
         }           
 
@@ -115,16 +112,6 @@ namespace Networking.Server
         {
             lock(this) clients.Remove(client.clientId);
         } 
-
-        public void RegisterAllInstructions()
-        {
-            if (instructions != null) return;
-
-            instructions = (from type in Assembly.GetExecutingAssembly().GetTypes()
-                            from method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                            where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
-                            select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
-        }
 
 
 

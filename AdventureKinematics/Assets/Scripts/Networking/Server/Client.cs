@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Networking.Server
 {
-    public class Client : ServerSideObject, IDisposable
+    public class Client : ServerSideObject
     {
         //--------------------------------------------------
         #region VARIABLES
@@ -36,44 +36,36 @@ namespace Networking.Server
         {
             // initialize client-sent methods
             RegisterInstructions(this);
-
-            client = this;
+            Initialize(this);
         }
 
         public void Connect(TcpClient tcp, int id)        //  initializes a connection with client 
         {
-
             // get tcp network stream
             this.tcp = tcp;
             clientId = id;
             stream = tcp.GetStream();
 
 
-            // begin data reading
+            // now we are connected and ready to begin data reading
+            Connected = true;
+            onStart?.Invoke();
             stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
         }
 
         public void Disconnect()        // safely disconnects client 
         {
+            if (!Connected) { Logging.LogError("Client " + clientId + ": Disconnecting was turned down: socket is already closed."); return; }
+            Connected = false;
+
             // notify client about disconnection
-            try
-            {
-                Send(Instructions.Disconnect);
-                tcp.Client.Shutdown(SocketShutdown.Send);
-            }
-            catch (ObjectDisposedException) { Logging.LogError(clientId + ": Disconnecting was turned down: socket is already closed."); }
-            catch (SocketException sockExc) { Logging.LogError(clientId + ": Socket exception occured: " + sockExc); }
+            Send(Instructions.Disconnect, null);
         }
 
         public void ForceDisconnect()   // without notifying it about such an intention, forcibly disconnects client 
         {
             // invoke event before disconnecting
-            try
-            {
-                onBeforeForceDisconnect?.Invoke();
-                BeforeForceDisconnect();
-            }
-            catch { }
+            try { onBeforeForceDisconnect?.Invoke(); } finally { }
 
             // force-disconnect client
             try
@@ -86,14 +78,19 @@ namespace Networking.Server
 
         public void Send(Instructions instructionId, byte[] data = null, bool waitTillEnd = false) // sends an instruction 
         {
+            byte[] dataToSend;
+
+
             try
             {
-                byte[] dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
+                if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
+                else dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
 
                 if (waitTillEnd) stream.Write(dataToSend, 0, dataToSend.Length);
                 else stream.WriteAsync(dataToSend, 0, dataToSend.Length);
             }
             catch (IOException) { Logging.LogError("Failed to send data!"); }
+            catch (ObjectDisposedException) { Logging.LogError("Failed to send data! Socket is closed."); }
         }
 
         public bool RegisterInstructions(object objToRegisterInstructionsFor)    // registers instructions for the specified class instance 
@@ -109,8 +106,6 @@ namespace Networking.Server
             else return false;
 
             return true;
-
-            // instructions[-1](null); ; // debugging
         }
 
         public bool ExecuteOne()    // execute one instruction from the buffered ones 
@@ -121,11 +116,11 @@ namespace Networking.Server
             {
                 lock (instructionsLock) { if (instructionsToExecute.Count == 0) return false;  instructionData = instructionsToExecute.Pop(); }
 
-                MethodInfo instruction = Server.instructions[instructionData.Item1];
+                MethodInfo instruction = instructions[instructionData.Item1];
                 instruction.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { instructionData.Item2 });
                 return true;
             }
-            catch (KeyNotFoundException) { Logging.LogError("Instruction with id " + instructionId + " does not exist or isn't declared properly!"); }
+            catch (KeyNotFoundException) { Logging.LogError("Instruction with id " + loclInstructionId + " does not exist or isn't declared properly!"); }
             return false;
         }
 
@@ -139,16 +134,11 @@ namespace Networking.Server
                 while (instructionsToExecute.Count > 0)
                 {
                     instructionData = instructionsToExecute.Pop();
-                    MethodInfo instruction = Server.instructions[instructionData.Item1];
+                    MethodInfo instruction = instructions[instructionData.Item1];
                     instruction.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { instructionData.Item2 });
                 }
             }
 
-        }
-
-        public void Dispose() 
-        {
-            Logging.Log("How's that!");
         }
 
 
@@ -159,12 +149,13 @@ namespace Networking.Server
 
 
 
+        public event Action onStart;
         public event Action onBeforeDisconnect;
         public event Action onBeforeForceDisconnect;
 
-        public void Start()
+        protected override void Start()
         {
-
+            Disconnect();
         } 
 
         protected override void BeforeDisconnect()
@@ -173,10 +164,9 @@ namespace Networking.Server
 
         protected override void BeforeForceDisconnect()
         {
-            registeredInstructionClasses.Clear();
         }
 
-        public override void Delete()
+        public override void Destroy()
         {
             Logging.LogDeny("Client " + clientId + " on address " + tcp.Client.RemoteEndPoint + " ended it's session.");
 
@@ -190,7 +180,11 @@ namespace Networking.Server
             stream = null;
             tcp = null;
 
-            base.Delete();
+            foreach (var deleg in onStart.GetInvocationList()) onStart -= (Action)deleg;
+            foreach (var deleg in onBeforeDisconnect.GetInvocationList()) onStart -= (Action)deleg;
+            foreach (var deleg in onBeforeForceDisconnect.GetInvocationList()) onStart -= (Action)deleg;
+
+            base.Destroy();
 
             Server.server.RemoveClient(this);
         }
@@ -206,7 +200,8 @@ namespace Networking.Server
 
         [Instruction(Instructions.HelloWorld)]
         private void instHelloWorld(byte[] data)       // testing function 
-        {   
+        {
+            Logging.Log("Not this!");
             if(data != null && data.Length > 0) Logging.LogWarning("Hello from the client-side! data: " + Bytes.ToString(data));
             else Logging.LogWarning("Hello from the client-side! No data was given...");
         }
@@ -215,17 +210,17 @@ namespace Networking.Server
         [Instruction(Instructions.Connect)]
         private void instConnect(byte[] data)        // connect 
         {
-
+            Logging.LogWarning("Hello from the client-side! " + Bytes.ToString(data));
         }
 
 
         [Instruction(Instructions.Disconnect)]
         private void instDisconnect(byte[] data)        // disconnect 
         {
-            onBeforeDisconnect?.Invoke();
-            BeforeDisconnect();
+            try { onBeforeDisconnect?.Invoke(); } finally { }
 
             tcp.Client.Shutdown(SocketShutdown.Both);
+            Connected = false;
         }
 
 
@@ -236,6 +231,8 @@ namespace Networking.Server
 
 
 
+        // instructions
+        private static Dictionary<short, MethodInfo> instructions;
         private Dictionary<Type, object> registeredInstructionClasses = new Dictionary<Type, object>();        // dictionary of the registered classes which contain instruction
 
 
@@ -243,6 +240,8 @@ namespace Networking.Server
         private bool bufferInstructions = false;
         private Stack<Tuple<short, byte[]>> instructionsToExecute = new Stack<Tuple<short, byte[]>>();
         private object instructionsLock = new object();
+
+        private bool Connected = false;
 
 
 
@@ -253,8 +252,16 @@ namespace Networking.Server
 
 
 
-        // accepts data header
-        private void OnHeaderReceive(IAsyncResult result)     // gets invoked every time data is available, and processes it 
+        public static void RegisterAllInstructions()    // makes all instructions ready for usage 
+        {
+            if (instructions == null)
+                instructions = (from type in Assembly.GetExecutingAssembly().GetTypes()
+                                from method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                                where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
+                                select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
+        }
+
+        private void OnHeaderReceive(IAsyncResult result)     // accepts data header, and processes it 
         {
             try
             {
@@ -278,16 +285,18 @@ namespace Networking.Server
                 readBytesCount = 0;
 
                 // decode and store header data
-                instructionId = Bytes.ToShort(headerBuffer);
-                dataSize = Bytes.ToInt(headerBuffer, 2);
+                loclInstructionId = Bytes.ToShort(headerBuffer);
+                loclDataSize = Bytes.ToInt(headerBuffer, 2);
 
-                if (dataSize > 0)
+                Logging.Log(BitConverter.ToString(headerBuffer));
+
+                if (loclDataSize > 0)
                 {
                     // create buffer for the incoming data
-                    dataBuffer = new byte[dataSize];
+                    dataBuffer = new byte[loclDataSize];
 
                     // begin reading the incoming data
-                    stream.BeginRead(dataBuffer, 0, dataSize, OnDataReceive, null);
+                    stream.BeginRead(dataBuffer, 0, loclDataSize, OnDataReceive, null);
                 }
                 else
                 {
@@ -298,21 +307,20 @@ namespace Networking.Server
                     stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
                 }
             }
-            catch (ClientDisconnectedException) { Delete(); }
-            catch (IOException) { Delete(); }
+            catch (ClientDisconnectedException) { Destroy(); }
+            catch (IOException) { Destroy(); }
             catch (Exception exc)
             {
                 Logging.LogError(exc);
                 Disconnect();
-                Delete();
+                Destroy();
             }
         }
         byte[] headerBuffer = new byte[6];
-        short instructionId = -1;
-        int dataSize = 0;
+        short loclInstructionId = -1;
+        int loclDataSize = 0;
 
-        // accepts data itself, and handles it
-        private void OnDataReceive(IAsyncResult result)
+        private void OnDataReceive(IAsyncResult result)    // accepts data itself, and handles it 
         {
             try
             {
@@ -322,9 +330,9 @@ namespace Networking.Server
                 readBytesCount += currentlyReadBytesCount;
 
                 // if we read too few bytes, repeat reading process, until we read all of the necessary bytes
-                if (readBytesCount < dataSize)
+                if (readBytesCount < loclDataSize)
                 {
-                    stream.BeginRead(dataBuffer, readBytesCount, (dataSize - readBytesCount), OnDataReceive, null);
+                    stream.BeginRead(dataBuffer, readBytesCount, (loclDataSize - readBytesCount), OnDataReceive, null);
                     return;
                 }
 
@@ -341,20 +349,19 @@ namespace Networking.Server
                 // begin reading the next packet, or disconnect, depending on the client stste
                 stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
             }
-            catch (ClientDisconnectedException) { Delete(); }
-            catch (IOException) { Delete(); }
+            catch (ClientDisconnectedException) { Destroy(); }
+            catch (IOException) { Destroy(); }
             catch (Exception exc)
             {
                 Logging.LogError(exc);
                 Disconnect();
-                Delete();
+                Destroy();
             }
         }
         byte[] dataBuffer = null;
         int readBytesCount = 0;
 
-        // specifies the metods of handling received data
-        private void HandleInstruction()
+        private void HandleInstruction()    // specifies the metods of handling received data 
         {
             try
             {
@@ -362,16 +369,16 @@ namespace Networking.Server
                 {
                     if (bufferInstructions)
                     {
-                        instructionsToExecute.Push(new Tuple<short, byte[]>(instructionId, dataBuffer));
+                        instructionsToExecute.Push(new Tuple<short, byte[]>(loclInstructionId, dataBuffer));
                     }
                     else
                     {
-                        MethodInfo instruction = Server.instructions[instructionId];
-                        instruction.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { dataBuffer });
+                        MethodInfo instruction = instructions[loclInstructionId];
+                        instruction?.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { dataBuffer });
                     }
                 }
             }
-            catch (KeyNotFoundException) { Logging.LogError("Instruction with id " + instructionId + " does not exist or isn't declared properly!"); }
+            catch (KeyNotFoundException) { Logging.LogError("Instruction with id " + loclInstructionId + " does not exist or isn't declared properly!"); }
         }
 
 

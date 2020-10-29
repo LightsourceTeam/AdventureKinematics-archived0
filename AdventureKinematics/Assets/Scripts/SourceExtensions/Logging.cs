@@ -62,7 +62,6 @@ namespace SourceExtensions
             Console.WriteLine("  [!]  " + message);
             Console.ForegroundColor = color;
 #else
-            // #7C0A02
             Debug.LogWarning(message);
 #endif
         }
