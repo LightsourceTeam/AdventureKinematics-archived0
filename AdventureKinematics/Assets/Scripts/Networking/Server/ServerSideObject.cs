@@ -42,7 +42,7 @@ namespace Networking.Server
             return newInstance;
         }
 
-        public virtual void Destroy()
+        public virtual void Delete()
         {
             client = null;
 

@@ -1,9 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System.Text;
-using System.Net;
-using System.Net.Sockets;
+﻿using System.Text;
 using System;
 using System.Linq;
 
@@ -65,7 +60,6 @@ namespace SourceExtensions
 
             return Encoding.Unicode.GetString(data, startIndex + 4, ToInt(data));
         }
-
 
         public static bool ToBool(byte[] data, int startIndex = 0)
         {
