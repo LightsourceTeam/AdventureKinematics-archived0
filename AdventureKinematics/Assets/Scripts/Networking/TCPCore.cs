@@ -1,26 +1,38 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using System.Net;
 using System;
 using SourceExtensions;
 using System.IO;
 
+
+
 namespace Networking
 {
     public class TCPCore
     {
+        //--------------------------------------------------
+        #region VARIABLES
+
+
+
         // connection-necessary params
         public TcpClient client { get; private set; }
         public NetworkStream stream { get; private set; }
         public IPEndPoint endPoint { get; private set; }
 
+
         // callbacks
         public Action<short, byte[]> handleDataCallback { get; private set; }
         public Action finalDisconnectCallback { get; private set; }
 
-        public TCPCore(IPEndPoint endPoint, Action<short, byte[]> handleDataCallback, Action finalDisconnectCallback)
+
+
+        #endregion
+        //--------------------------------------------------
+        #region INTERACTION
+
+
+        public TCPCore(IPEndPoint endPoint, Action<short, byte[]> handleDataCallback = null, Action finalDisconnectCallback = null)
         {
             client = new TcpClient();
             client.Connect(endPoint);
@@ -31,7 +43,7 @@ namespace Networking
             this.finalDisconnectCallback = finalDisconnectCallback;
         }
 
-        public TCPCore(TcpClient client, Action<short, byte[]> handleDataCallback, Action finalDisconnectCallback)
+        public TCPCore(TcpClient client, Action<short, byte[]> handleDataCallback = null, Action finalDisconnectCallback = null)
         {
             // get tcp network stream
             this.client = client;
@@ -73,6 +85,12 @@ namespace Networking
             stream.Close();
             client.Close();
         }
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region INTERNAL
 
 
 
@@ -170,5 +188,10 @@ namespace Networking
         }
         byte[] dataBuffer = null;
         int readBytesCount = 0;
+
+
+
+        #endregion
+        //--------------------------------------------------
     }
 }

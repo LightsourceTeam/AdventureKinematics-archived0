@@ -22,11 +22,14 @@ namespace Networking.Server
         public static Server server;
 
         /// initializing connection variables & client dictionary
-        public static IPAddress ip = IPAddress.Parse("127.0.0.1");
-        public static int port = 23852;
+        public static IPEndPoint tcpEndpPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23852);
+        public static IPEndPoint udpEndpPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23853);
 
         public static Dictionary<int, Client> clients = new Dictionary<int, Client>();
+        public static Dictionary<IPEndPoint, Client> udpConnections = new Dictionary<IPEndPoint, Client>();
+        
         private TcpListener tcpListener;
+        private UdpClient udpListener;
 
         bool isAcceptingNewClients = false;
 
@@ -56,21 +59,31 @@ namespace Networking.Server
 
             Logging.Log("\n\n");
 
-            // initilaize tcp listener and start accepting clients
-            tcpListener = new TcpListener(ip, port);
-            Logging.LogInfo("Starting server on " + ip + " " + port + "...");
-            tcpListener.Start();
+            // initilaize tcp listener
+            Logging.LogInfo("Starting server on " + tcpEndpPoint + "...");
+            tcpListener = new TcpListener(tcpEndpPoint);
+            
+            // initialize udp listener
+            Logging.LogInfo("Initializing udp on " + udpEndpPoint + "...");
+            udpListener = new UdpClient();
 
-            Logging.LogInfo("Start accepting clients on " + ip + " " + port + "...");
+            Logging.LogInfo("Starting tcp management...");
+            tcpListener.Start();
             tcpListener.BeginAcceptTcpClient(ConnectCallback, null);
 
+
+            Logging.LogInfo("Starting udp management...");
+            udpListener.BeginReceive(ManageUdpData, null);
+
+
+            Logging.LogAccept("Done! Starting to manange clients on " + tcpEndpPoint + "...");
         }            
 
 
 
         #endregion
         //--------------------------------------------------
-        #region ADMINISTRATOR FUNCTIONS
+        #region ADMINISTRATIVE
         /// initializing administator functions
 
 
@@ -80,11 +93,16 @@ namespace Networking.Server
             Logging.Log("Warning: Server has been put into shutdown state! Waiting until connected clients leave...");
         }
 
+        public void RemoveClient(Client client)
+        {
+            lock (this) clients.Remove(client.clientId);
+        }
+
 
 
         #endregion
         //--------------------------------------------------
-        #region INTERNAL METHODS
+        #region INTERNAL
         /// these methods will be executed only here
 
 
@@ -108,12 +126,15 @@ namespace Networking.Server
         }
         private int lastId = 0;
 
-        public void RemoveClient(Client client)
+        private void ManageUdpData(IAsyncResult result)
         {
-            lock(this) clients.Remove(client.clientId);
-        } 
+            IPEndPoint endPoint = null;
+            Bytes.Couple data = udpListener.EndReceive(result, ref endPoint);
+            udpListener.BeginReceive(ManageUdpData, null);
 
-
+            Client destination = null;
+            if (udpConnections.TryGetValue(endPoint, out destination)) destination.udp.OnDataReceive(data);
+        }
 
         #endregion
         //--------------------------------------------------

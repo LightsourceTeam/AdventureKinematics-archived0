@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Net.Sockets;
 using System;
 using SourceExtensions;
-using System.IO;
 
 namespace Networking.Server
 {
@@ -71,19 +70,12 @@ namespace Networking.Server
             catch (SocketException sockExc) { Logging.LogError(tcp.endPoint + ": Socket exception occured: " + sockExc); }
         }
 
-        public bool RegisterInstructions(object objToRegisterInstructionsFor)    // registers instructions for the specified class instance 
+        public bool RegisterInstructions(object objToRegisterInstructionsFor, bool reRegisterIfPresent=false)    // registers instructions for the specified class instance 
         {
-            /*
-            super puper large line which:
-                1. gets non-public methods from *Client*, which are marked with *ServerSentAttribute*
-                2. gets delegates to the gotten functions from their *MethodInfo*'s
-                3. stores them to *sentInstructions*-dictionary, where keys are Ids of *ServerSentAttribute*, and values are delegates themselves
-            */
-
-            if (!registeredInstructionClasses.ContainsKey(objToRegisterInstructionsFor.GetType())) registeredInstructionClasses[objToRegisterInstructionsFor.GetType()] = objToRegisterInstructionsFor;
-            else return false;
-
-            return true;
+            if (!reRegisterIfPresent && registeredInstructionClasses.ContainsKey(objToRegisterInstructionsFor.GetType())) return false;
+            
+                 
+            registeredInstructionClasses[objToRegisterInstructionsFor.GetType()] = objToRegisterInstructionsFor; return true;
         }
 
         public bool ExecuteOne()    // execute one instruction from the buffered ones 

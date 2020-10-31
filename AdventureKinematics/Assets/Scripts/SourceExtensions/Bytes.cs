@@ -180,12 +180,15 @@ namespace SourceExtensions
 
 
 
-            int offset = 0;
-            byte[] data;
+            public int offset { get; private set; } = 0;
+            public byte[] data { get; private set; }
 
             public Couple(byte[] data, int index = 0) { this.data = data; this.offset = index; }
 
             public Couple() { data = new byte[0]; }
+
+            public static implicit operator Couple(byte[] data) => new Couple(data);
+            public static implicit operator byte[](Couple data) => data.data.Skip(data.offset).ToArray();
 
 
 
