@@ -1,6 +1,7 @@
-﻿using System;
-using System.Collections;
+﻿using Networking.Client;
+using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -8,9 +9,46 @@ namespace SourceExtensions
 {
     public class CustomMonoBehaviour : MonoBehaviour
     {
-        protected virtual void OnEnable() { CustomEventSystem.onEarlyUpdate += EarlyUpdate; CustomEventSystem.onNetworkUpdate += NetworkUpdate; CustomEventSystem.onBeforeDisconnect += BeforeDisconnect; }
+        //--------------------------------------------------
+        #region INSTRUCTIONS
 
-        protected virtual void OnDisable() { CustomEventSystem.onEarlyUpdate -= EarlyUpdate; CustomEventSystem.onNetworkUpdate -= NetworkUpdate; CustomEventSystem.onBeforeDisconnect -= BeforeDisconnect; }
+
+
+        public static Dictionary<short, MethodInfo> instructions { get; private set; }  // contains all the methods marked with Instruction attribute
+
+
+        public static void RegisterAllInstructions()    // makes all instructions ready for usage 
+        {
+            if (instructions == null)
+                instructions = (from type in Assembly.GetExecutingAssembly().GetTypes()
+                                from method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                                where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
+                                select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
+        }
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region EVENTS
+
+
+        protected virtual void OnEnable() 
+        { 
+            CustomEventSystem.onEarlyUpdate += EarlyUpdate;
+            CustomEventSystem.onNetworkUpdate += NetworkUpdate; 
+            CustomEventSystem.onBeforeDisconnect += BeforeDisconnect;
+            CustomEventSystem.onAfterUdpInvolved += AfterUdpInvolved;
+            CustomEventSystem.onBeforeConnect += BeforeConnect;
+        }
+
+        protected virtual void OnDisable() { 
+            CustomEventSystem.onEarlyUpdate -= EarlyUpdate; 
+            CustomEventSystem.onNetworkUpdate -= NetworkUpdate;
+            CustomEventSystem.onBeforeDisconnect -= BeforeDisconnect; 
+            CustomEventSystem.onAfterUdpInvolved -= AfterUdpInvolved;
+            CustomEventSystem.onBeforeConnect -= BeforeConnect;
+        }
 
         // gets called every time an instruction from server gets executed
         protected virtual void NetworkUpdate()
@@ -30,9 +68,18 @@ namespace SourceExtensions
         // gets called in the end of the frame
         protected virtual void LateUpdate() { }
 
+        // gets called before connection completes
+        protected virtual void BeforeConnect() { }
+
         // gets called before disconnection completes
         protected virtual void BeforeDisconnect() { }
 
+        // gets called after udp connection is established
+        protected virtual void AfterUdpInvolved() { }
 
+
+
+        #endregion
+        //--------------------------------------------------
     }
 }

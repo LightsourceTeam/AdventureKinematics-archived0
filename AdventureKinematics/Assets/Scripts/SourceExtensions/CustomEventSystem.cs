@@ -11,24 +11,26 @@ namespace SourceExtensions
         public static event Action onEarlyUpdate;
         public static event Action onNetworkUpdate;
         public static event Action onBeforeDisconnect;
+        public static event Action onAfterUdpInvolved;
+        public static event Action onBeforeConnect;
+        public static bool ConnectedToServer = false;
+
+
 
         protected override void Update()
         {
+            if(ConnectedToServer) onNetworkUpdate?.Invoke();
 
-            /*networkTimes = Time.deltaTime / networkDeltaTime + extraTime;
-            extraTime = networkTimes - (int)networkTimes;
-            for (int i = 0; i < (int)networkTimes; i++) networkUpdate?.Invoke();*/
-
-            for (int i = 0; i < networkTimes; i++) onNetworkUpdate?.Invoke();
             onEarlyUpdate?.Invoke();
 
             base.Update();
         }
 
-        public static void InvokeBeforeDisconnect() { onBeforeDisconnect?.Invoke(); }
+        public static void NotifyAboutDisconnect() { ConnectedToServer = true; onBeforeDisconnect?.Invoke(); }
 
-        int networkTimes = 2;
-        float networkDeltaTime = 0.08f;
-        float extraTime = 0f;
+        public static void NotifyAboutInvolvingUdp() => onAfterUdpInvolved?.Invoke();
+
+        public static void NotifyAboutConnect() { ConnectedToServer = true;  onBeforeConnect?.Invoke(); }
+
     }
 }

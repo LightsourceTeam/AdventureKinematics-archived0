@@ -23,10 +23,11 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkCyan;
-            Console.WriteLine("  [i]  " + message);
+            Console.WriteLine($"  [i]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
-            Debug.Log("<color=lightblue>" + message + "</color>");
+
+            Debug.Log($"<color=lightblue> {message} </color>");
 #endif
         }
 
@@ -35,10 +36,10 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("  [+]  " + message);
+            Console.WriteLine($"  [+]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
-            Debug.Log("<color=green>" + message + "</color>");
+            Debug.Log($"<color=green> {message} </color>");
 #endif
         }
 
@@ -47,10 +48,10 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("  [-]  " + message);
+            Console.WriteLine($"  [-]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
-            Debug.Log("<color=red>" + message + "</color>");
+            Debug.Log($"<color=red> {message} </color>");
 #endif
         }
 
@@ -59,7 +60,7 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("  [!]  " + message);
+            Console.WriteLine($"  [!]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
             Debug.LogWarning(message);
@@ -71,7 +72,7 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("  [x]  " + message);
+            Console.WriteLine($"  [x]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
             Debug.LogError(message);
@@ -83,10 +84,10 @@ namespace SourceExtensions
 #if UNITY_SERVER
             ConsoleColor color = System.Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkRed;
-            Console.WriteLine("  [X]  " + message);
+            Console.WriteLine($"  [X]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
-            Debug.LogError("<color=#7C0A02>" + message + "</color>");
+            Debug.LogError($"<color=#7C0A02> {message} </color>");
 #endif
         }
     }

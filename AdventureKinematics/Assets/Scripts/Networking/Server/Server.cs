@@ -4,9 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System;
 using SourceExtensions;
-using System.Reflection;
-using System.Linq;
-
+using System.Threading.Tasks;
 
 namespace Networking.Server
 {
@@ -22,16 +20,16 @@ namespace Networking.Server
         public static Server server;
 
         /// initializing connection variables & client dictionary
-        public static IPEndPoint tcpEndpPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23852);
-        public static IPEndPoint udpEndpPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23853);
+        public static IPEndPoint tcpEndPoint = new IPEndPoint(IPAddress.Any, 23852);
+        public static IPEndPoint udpEndPoint = new IPEndPoint(IPAddress.Any, 23853);
 
         public static Dictionary<int, Client> clients = new Dictionary<int, Client>();
         public static Dictionary<IPEndPoint, Client> udpConnections = new Dictionary<IPEndPoint, Client>();
-        
-        private TcpListener tcpListener;
-        private UdpClient udpListener;
 
-        bool isAcceptingNewClients = false;
+        public TcpListener tcpListener { get; private set; } = null;
+        public UdpClient udpListener { get; private set; } = null;
+
+        bool isAlive = false;
 
 
 
@@ -44,13 +42,13 @@ namespace Networking.Server
 
         private void Awake()       // unity function for starting server 
         {
-            Client.RegisterAllInstructions();
+            ServerSideObject.RegisterAllInstructions();
             Raise();
-        }           
+        }
 
-        public void Raise()        // reises (starts) server 
+        public void Raise()        // raises (starts) server 
         {
-            isAcceptingNewClients = true;
+            isAlive = true;
 
             // setting active instance of the server
             if (server == null) server = this;
@@ -60,23 +58,26 @@ namespace Networking.Server
             Logging.Log("\n\n");
 
             // initilaize tcp listener
-            Logging.LogInfo("Starting server on " + tcpEndpPoint + "...");
-            tcpListener = new TcpListener(tcpEndpPoint);
-            
+            Logging.LogInfo($"Initializing tcp on {tcpEndPoint}...");
+            tcpListener = new TcpListener(tcpEndPoint);
+            tcpEndPoint = (IPEndPoint)tcpListener.LocalEndpoint;
+
             // initialize udp listener
-            Logging.LogInfo("Initializing udp on " + udpEndpPoint + "...");
-            udpListener = new UdpClient();
+            Logging.LogInfo($"Initializing udp on {udpEndPoint}...");
+            udpListener = new UdpClient(udpEndPoint.Port);
+            udpEndPoint = (IPEndPoint)udpListener.Client.LocalEndPoint;
+
 
             Logging.LogInfo("Starting tcp management...");
             tcpListener.Start();
-            tcpListener.BeginAcceptTcpClient(ConnectCallback, null);
+            tcpListener.BeginAcceptTcpClient(TCPConnectCallback, null);
 
 
             Logging.LogInfo("Starting udp management...");
-            udpListener.BeginReceive(ManageUdpData, null);
+            udpListener.BeginReceive(UDPManageDataCallback, null);
 
 
-            Logging.LogAccept("Done! Starting to manange clients on " + tcpEndpPoint + "...");
+            Logging.LogAccept($"Done! Starting to accept clients on {tcpEndPoint}...");
         }            
 
 
@@ -88,15 +89,19 @@ namespace Networking.Server
 
 
 
-        public void Shutdown()
+        public Task Shutdown()
         {
             Logging.Log("Warning: Server has been put into shutdown state! Waiting until connected clients leave...");
+            shouldLive = false;
+
+            return Task.Run(() => { foreach (var client in clients) client.Value.ForceDisconnect(); });
         }
 
-        public void RemoveClient(Client client)
-        {
-            lock (this) clients.Remove(client.clientId);
-        }
+        public void RemoveClient(Client client) { lock (clients) clients.Remove(client.clientId); }
+
+        public void RegisterUdp(IPEndPoint endPoint, Client client) { lock (udpConnections) udpConnections[endPoint] = client; }
+
+        public bool UnregisterUdp(IPEndPoint endPoint) { lock (udpConnections) return udpConnections.Remove(endPoint); }
 
 
 
@@ -107,34 +112,46 @@ namespace Networking.Server
 
 
 
-        private void ConnectCallback(IAsyncResult result)
+        private void TCPConnectCallback(IAsyncResult result)
         {
             // accept new client, and start listening for the new one.
             TcpClient tcp = tcpListener.EndAcceptTcpClient(result);
-
-            // alert that new client has connected
-            Logging.LogAccept("Incoming Connection: " + tcp.Client.RemoteEndPoint);
+            if (shouldLive) tcpListener.BeginAcceptTcpClient(TCPConnectCallback, null);
 
             Client client = new Client();
+            lock (clients) clients.Add(lastId, client);
 
-
-            lock (this) clients.Add(lastId, client);
             client.Connect(tcp, lastId);
             lastId++;
-
-            if (isAcceptingNewClients) tcpListener.BeginAcceptTcpClient(ConnectCallback, null);
         }
-        private int lastId = 0;
+        bool shouldLive { get { lock (this) return isAlive; } set { lock (this) isAlive = value; } }
+        int lastId = 0;
 
-        private void ManageUdpData(IAsyncResult result)
+        private void UDPManageDataCallback(IAsyncResult result)
         {
-            IPEndPoint endPoint = null;
-            Bytes.Couple data = udpListener.EndReceive(result, ref endPoint);
-            udpListener.BeginReceive(ManageUdpData, null);
+            try
+            {
+                IPEndPoint endPoint = null;
 
-            Client destination = null;
-            if (udpConnections.TryGetValue(endPoint, out destination)) destination.udp.OnDataReceive(data);
+
+                Bytes.Couple data = udpListener.EndReceive(result, ref endPoint);
+                udpListener.BeginReceive(UDPManageDataCallback, null);
+                
+                Client destination = null;
+                lock (udpConnections) if (!udpConnections.TryGetValue(endPoint, out destination)) return;
+
+                destination.udp.OnDataReceive(data);
+            }
+            catch (ObjectDisposedException)
+            {
+                Logging.LogCritical("UDP LISTENER IS CLOSED!!! Shutting down the server...");
+                Shutdown();
+                return;
+            }
+
         }
+
+
 
         #endregion
         //--------------------------------------------------

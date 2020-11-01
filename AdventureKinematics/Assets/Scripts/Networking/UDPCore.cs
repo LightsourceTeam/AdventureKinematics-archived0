@@ -21,8 +21,7 @@ namespace Networking
 
         // callbacks
         public Action<short, byte[]> handleDataCallback { get; private set; }
-        public Action finalDisconnectCallback { get; private set; }
-
+        public bool isConnected;
 
 
         #endregion
@@ -31,24 +30,20 @@ namespace Networking
 
 
 
-        public UDPCore(IPEndPoint endPoint, Action<short, byte[]> handleDataCallback = null, Action finalDisconnectCallback = null)
+        public UDPCore(Action<short, byte[]> handleDataCallback = null)
         {
-            client = new UdpClient(endPoint);
-            this.endPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-
+            client = new UdpClient();
+            isConnected = true;
 
             this.handleDataCallback = handleDataCallback;
-            this.finalDisconnectCallback = finalDisconnectCallback;
-
         }
 
-        public UDPCore(UdpClient client, Action<short, byte[]> handleDataCallback = null, Action finalDisconnectCallback = null)
+        public UDPCore(UdpClient client, Action<short, byte[]> handleDataCallback = null)
         {
             this.client = client;
-            endPoint = (IPEndPoint)client.Client.RemoteEndPoint;
+            isConnected = false;
 
             this.handleDataCallback = handleDataCallback;
-            this.finalDisconnectCallback = finalDisconnectCallback;
         }
 
         public void Send(Instructions instructionId, byte[] data = null) // sends an instruction 
@@ -60,18 +55,32 @@ namespace Networking
                 if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
                 else dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
 
-                client.BeginSend(dataToSend, dataToSend.Length, null, null);
+                if (isConnected) client.BeginSend(dataToSend, dataToSend.Length, null, null); 
+                else client.BeginSend(dataToSend, dataToSend.Length, endPoint, null, null);
             }
             catch (IOException) { Logging.LogError("Failed to send data!"); }
             catch (ObjectDisposedException) { Logging.LogError("Failed to send data! Socket is closed."); }
         }
 
-        public void Open() => client.BeginReceive(OnDataReceive, null);
+        public void Open(IPEndPoint remoteEndPoint) 
+        {
+            endPoint = remoteEndPoint;
+            if (isConnected)
+            {
+                client.Connect(remoteEndPoint);
+                client.BeginReceive(OnDataReceive, null);
+            }
+        }
+
+        public void Shutdown(SocketShutdown how)
+        {
+            client.Client.Shutdown(how);
+        }
 
         public void Close()
         {
             handleDataCallback = null;
-            finalDisconnectCallback = null;
+            client.Close();
         }
 
 
@@ -82,22 +91,34 @@ namespace Networking
 
 
 
-        private void OnDataReceive(IAsyncResult result)     // accepts data header, and processes it 
+        private void OnDataReceive(IAsyncResult result)     // client version. accepts data, and processes it 
         {
-            IPEndPoint endPoint = null;
-            Bytes.Couple data = client.EndReceive(result, ref endPoint);
+            try
+            {
+                IPEndPoint localEndPoint = null;
+                Bytes.Couple data = client.EndReceive(result, ref localEndPoint);
 
-            if (!endPoint.Equals(this.endPoint) || data.data.Length < 6) return;
+                if (!localEndPoint.Equals((IPEndPoint)client.Client.RemoteEndPoint) || data.data.Length < 6) return;
 
-            short instructionId = data.GetShort();
-            int dataSize = data.GetInt();
+                short instructionId = data.GetShort();
+                int dataSize = data.GetInt();
 
-            if ((data.data.Length - 6) < dataSize) return;
+                if ((data.data.Length - 6) < dataSize) return;
 
-            handleDataCallback?.Invoke(instructionId, data);
+
+                handleDataCallback.Invoke(instructionId, data);
+
+
+                client.BeginReceive(OnDataReceive, null);
+            }
+            catch (ObjectDisposedException)
+            {
+                Close();
+                return; // Connection closed
+            }
         }
 
-        public void OnDataReceive(Bytes.Couple data)     // accepts data header, and processes it 
+        public void OnDataReceive(Bytes.Couple data)     // server version. accepts data, and processes it 
         {
             if (data.data.Length < 6) return;
 

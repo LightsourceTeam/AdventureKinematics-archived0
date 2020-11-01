@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Net.Sockets;
+using System.Net;
 using System;
 using SourceExtensions;
 
@@ -17,7 +18,7 @@ namespace Networking.Server
 
         public TCPCore tcp { get; private set; }
         public UDPCore udp { get; private set; }       // TODO
-        
+
         public int clientId;                // client unique connection identifier, TODO replace it with something not stupid
 
 
@@ -38,43 +39,64 @@ namespace Networking.Server
 
         public void Connect(TcpClient tcp, int id)        //  initializes a connection with client 
         {
+            Logging.LogAccept($"Client {id} on address {tcp.Client.RemoteEndPoint} joined the server.");
+
             // get tcp network stream
             clientId = id;
             this.tcp = new TCPCore(tcp, HandleInstruction, Delete);
 
             // now we are connected and ready to begin data reading
             Connected = true;
-            onStart?.Invoke();
+            onBeforeConnect?.Invoke();
             this.tcp.Open();
+        }
+
+        public void InvolveUdp()
+        {
+            Logging.LogInfo($"Client {clientId}: a request to involve udp has been initialed.");
+
+            udp = new UDPCore(Server.server.udpListener, HandleInstruction);
+            tcp.Send(Instructions.RequestUdp, Bytes.ToBytes(false));
         }
 
         public void Disconnect()        // safely disconnects client 
         {
-            if (!Connected) { Logging.LogError("Client " + clientId + ": Disconnecting was turned down: socket is already closed."); return; }
+            if (!Connected) { Logging.LogError($"Client {clientId}: Disconnecting was turned down: socket is already closed."); return; }
             Connected = false;
 
             tcp.Send(Instructions.Disconnect);
         }
 
-        public void ForceDisconnect()   // without notifying it about such an intention, forcibly disconnects client 
+        public void ForceDisconnect(string reason = null)   // without notifying it about such an intention, forcibly disconnects client 
         {
-            // invoke event before disconnecting
-            try { onBeforeForceDisconnect?.Invoke(); } finally { }
-
-            // force-disconnect client
-            try
+            lock (instructionsLock)
             {
-                tcp.Shutdown(SocketShutdown.Both);
+                // invoke event before disconnecting
+                try { onBeforeForceDisconnect?.Invoke(); }
+                finally
+                {
+
+                    try
+                    {
+                        if (reason != null && reason.Length > 0) tcp.Send(Instructions.ForceDisconnect, Bytes.ToBytes(reason));
+                        else tcp.Send(Instructions.ForceDisconnect);
+                    }
+                    finally
+                    {
+                        // force-disconnect client
+                        try { tcp.Shutdown(SocketShutdown.Both); }
+                        catch (ObjectDisposedException) { Logging.LogError($"Client {clientId}: Force disconnecting is disallowed: socket was closed."); }
+                        catch (SocketException sockExc) { Logging.LogError($"Client {clientId}: Socket exception occured: " + sockExc); }
+                    }
+                }
             }
-            catch (ObjectDisposedException) { Logging.LogError(tcp.endPoint + ": Sending is turned down: socket was closed."); }
-            catch (SocketException sockExc) { Logging.LogError(tcp.endPoint + ": Socket exception occured: " + sockExc); }
         }
 
-        public bool RegisterInstructions(object objToRegisterInstructionsFor, bool reRegisterIfPresent=false)    // registers instructions for the specified class instance 
+        public bool RegisterInstructions(object objToRegisterInstructionsFor, bool reRegisterIfPresent = false)    // registers instructions for the specified class instance 
         {
             if (!reRegisterIfPresent && registeredInstructionClasses.ContainsKey(objToRegisterInstructionsFor.GetType())) return false;
-            
-                 
+
+
             registeredInstructionClasses[objToRegisterInstructionsFor.GetType()] = objToRegisterInstructionsFor; return true;
         }
 
@@ -90,25 +112,37 @@ namespace Networking.Server
                 instruction.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { instructionData.Item2 });
                 return true;
             }
-            catch (KeyNotFoundException) { Logging.LogError("Instruction with id " + instructionData?.Item1 + " does not exist or isn't declared properly!"); }
+            catch (KeyNotFoundException) { Logging.LogError($"Client {clientId}: Instruction with id {instructionData?.Item1} does not exist or isn't declared properly!"); }
+            catch (Exception exc) { Logging.LogError($"Client {clientId}: Unhandled Exception occured while executing an instruction with id {instructionData?.Item1}: {exc}"); }
             return false;
         }
 
         public void ExecuteAll()    // execute all the buffered instructions 
         {
-
-            Tuple<short, byte[]> instructionData;
-
             lock (instructionsLock)
             {
                 while (instructionsToExecute.Count > 0)
                 {
-                    instructionData = instructionsToExecute.Pop();
-                    MethodInfo instruction = instructions[instructionData.Item1];
-                    instruction.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { instructionData.Item2 });
+                    ExecuteOne();
                 }
             }
 
+        }
+
+        public void SwitchToBufferingMode() // switches execution method to buffering, which means all the received instructions will be buffered instead of being executed in place 
+        {
+            lock (instructionsLock) { if (!bufferInstructions) bufferInstructions = true; }
+        }
+
+        public void SwichToEventMode(bool executeBuffered = true) // switches execution method to event-driven, which means all the received instructions will be executed in place 
+        {
+            lock (instructionsLock)
+            {
+                if (!bufferInstructions) return;
+
+                bufferInstructions = false;
+                if (executeBuffered) ExecuteAll();
+            }
         }
 
 
@@ -119,15 +153,15 @@ namespace Networking.Server
 
 
 
-        public event Action onStart;
+        public event Action onBeforeConnect;
         public event Action onBeforeDisconnect;
         public event Action onBeforeForceDisconnect;
+        public event Action onAfterUdpInvolved;
 
-        protected override void Start()
+        protected override void BeforeConenct()
         {
-            // notify client about disconnection
-            ///tcp.Send(Instructions.HelloWorld, Bytes.ToBytes("Hello darkness my old friend!"));
-        } 
+            InvolveUdp();
+        }
 
         protected override void BeforeDisconnect()
         {
@@ -137,18 +171,23 @@ namespace Networking.Server
         {
         }
 
+        protected override void AfterUdpInvolved()
+        {
+            udp.Send(Instructions.HelloWorld, Bytes.ToBytes("Hello from server!"));
+        }
+
         public override void Delete()
         {
-            Logging.LogDeny("Client " + clientId + " on address " + tcp.endPoint + " ended it's session.");
+            Logging.LogDeny($"Client {clientId} on address {tcp.endPoint} ended it's session.");
 
             registeredInstructionClasses.Clear();
 
             if (Connected) Disconnect();
             tcp.Close();
 
-            foreach (var deleg in onStart.GetInvocationList()) onStart -= (Action)deleg;
-            foreach (var deleg in onBeforeDisconnect.GetInvocationList()) onStart -= (Action)deleg;
-            foreach (var deleg in onBeforeForceDisconnect.GetInvocationList()) onStart -= (Action)deleg;
+            foreach (var deleg in onBeforeConnect.GetInvocationList()) onBeforeConnect -= (Action)deleg;
+            foreach (var deleg in onBeforeDisconnect.GetInvocationList()) onBeforeConnect -= (Action)deleg;
+            foreach (var deleg in onBeforeForceDisconnect.GetInvocationList()) onBeforeConnect -= (Action)deleg;
 
             base.Delete();
 
@@ -159,7 +198,7 @@ namespace Networking.Server
 
         #endregion
         //--------------------------------------------------
-        #region CLIENT-SENT INSTRUCTIONS
+        #region INSTRUCTIONS
         /// instructions coming from client
 
 
@@ -167,9 +206,8 @@ namespace Networking.Server
         [Instruction(Instructions.HelloWorld)]
         private void instHelloWorld(byte[] data)       // testing function 
         {
-            Logging.Log("Not this!");
-            if(data != null && data.Length > 0) Logging.LogWarning("Hello from the client-side! data: " + Bytes.ToString(data));
-            else Logging.LogWarning("Hello from the client-side! No data was given...");
+            if (data != null && data.Length > 0) Logging.LogInfo($"Hello from the server-side! data: {Bytes.ToString(data)}");
+            else Logging.LogInfo("Hello from the server-side! No data was given...");
         }
 
 
@@ -190,15 +228,33 @@ namespace Networking.Server
         }
 
 
+        [Instruction(Instructions.RequestUdp)]
+        private void instRequestUdp(byte[] data)
+        {
+            if (udp != null)
+            {
+                IPEndPoint endp = new IPEndPoint(((IPEndPoint)tcp.client.Client.RemoteEndPoint).Address, Bytes.ToInt(data));
+                Server.server.RegisterUdp(endp, this);
+                udp.Open(endp);
+                availableUdp = true;
+
+                tcp.Send(Instructions.RequestUdp, Bytes.ToBytes(true));
+
+                onAfterUdpInvolved?.Invoke();
+            }
+            else ForceDisconnect();
+        }
+
+
+
         #endregion
         //--------------------------------------------------
-        #region INTERNAL VARIABLES
-        /// inaccessible variables, that are responsible for internal client data storing
+        #region INTERNAL 
+        /// inaccessible fields, that are responsible for internal client functioning
 
 
 
         // instructions
-        private static Dictionary<short, MethodInfo> instructions;
         private Dictionary<Type, object> registeredInstructionClasses = new Dictionary<Type, object>();        // dictionary of the registered classes which contain instruction
 
 
@@ -208,24 +264,9 @@ namespace Networking.Server
         private object instructionsLock = new object();
 
         private bool Connected = false;
+        private bool availableUdp = false;
 
 
-
-        #endregion
-        //--------------------------------------------------
-        #region INTERNAL METHODS
-        /// inaccessible methods, that are responsible for internal client functioning
-
-
-
-        public static void RegisterAllInstructions()    // makes all instructions ready for usage 
-        {
-            if (instructions == null)
-                instructions = (from type in Assembly.GetExecutingAssembly().GetTypes()
-                                from method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                                where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
-                                select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
-        }
 
         private void HandleInstruction(short instructionId, byte[] data)    // specifies the metods of handling received data 
         {
