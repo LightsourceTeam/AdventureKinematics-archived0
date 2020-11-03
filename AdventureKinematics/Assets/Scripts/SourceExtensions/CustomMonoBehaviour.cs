@@ -77,7 +77,9 @@ namespace SourceExtensions
         // gets called after udp connection is established
         protected virtual void AfterUdpInvolved() { }
 
+        protected virtual void OnAppQuit() { }
 
+        protected virtual void OnAppFinalQuit() { }
 
         #endregion
         //--------------------------------------------------

@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System;
 using SourceExtensions;
 using System.Threading.Tasks;
+using static SourceExtensions.UnlockObject;
 
 namespace Networking.Server
 {
@@ -94,14 +95,16 @@ namespace Networking.Server
             Logging.Log("Warning: Server has been put into shutdown state! Waiting until connected clients leave...");
             shouldLive = false;
 
-            return Task.Run(() => { foreach (var client in clients) client.Value.ForceDisconnect(); });
+            // needs remastering
+
+            return Task.Run(() => { foreach (var client in clients) client.Value.Delete(); });
         }
 
-        public void RemoveClient(Client client) { lock (clients) clients.Remove(client.clientId); }
+        public void RemoveClient(Client client) { if (client == null) return; lock (clients) clients.Remove(client.clientId); }
 
-        public void RegisterUdp(IPEndPoint endPoint, Client client) { lock (udpConnections) udpConnections[endPoint] = client; }
+        public void RegisterUdp(IPEndPoint endPoint, Client client) { if (endPoint == null) return; lock (udpConnections) udpConnections[endPoint] = client; }
 
-        public bool UnregisterUdp(IPEndPoint endPoint) { lock (udpConnections) return udpConnections.Remove(endPoint); }
+        public bool UnregisterUdp(IPEndPoint endPoint) { if (endPoint == null) return false; lock (udpConnections) return udpConnections.Remove(endPoint); }
 
 
 
@@ -116,13 +119,12 @@ namespace Networking.Server
         {
             // accept new client, and start listening for the new one.
             TcpClient tcp = tcpListener.EndAcceptTcpClient(result);
+            lastId++;
             if (shouldLive) tcpListener.BeginAcceptTcpClient(TCPConnectCallback, null);
 
             Client client = new Client();
-            lock (clients) clients.Add(lastId, client);
-
+            clients.Add(lastId, client);
             client.Connect(tcp, lastId);
-            lastId++;
         }
         bool shouldLive { get { lock (this) return isAlive; } set { lock (this) isAlive = value; } }
         int lastId = 0;

@@ -258,6 +258,17 @@ namespace SourceExtensions
                 return result;
             }
 
+            public string GetString()
+            {
+                if (data == null || data.Length == 0) throw new ArgumentException("Got an empty byte array!");
+
+                int stringSize = 0;
+                var result = Bytes.ToString(data, out stringSize, offset);
+                offset += stringSize + 4;
+
+                return result;
+            }
+
             public bool GetBool()
             {
                 if (data == null || data.Length == 0) throw new ArgumentException("Got an empty byte array!");

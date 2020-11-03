@@ -23,8 +23,7 @@ namespace Networking
 
         // callbacks
         public Action<short, byte[]> handleDataCallback { get; private set; }
-        public Action finalDisconnectCallback { get; private set; }
-
+        public Action disconnectCallback { get; private set; }
 
 
         #endregion
@@ -32,7 +31,7 @@ namespace Networking
         #region INTERACTION
 
 
-        public TCPCore(IPEndPoint endPoint, Action<short, byte[]> handleDataCallback = null, Action finalDisconnectCallback = null)
+        public TCPCore(IPEndPoint endPoint, Action<short, byte[]> handleDataCallback = null, Action disconnectCallback = null)
         {
             client = new TcpClient();
             client.Connect(endPoint);
@@ -40,10 +39,10 @@ namespace Networking
             this.endPoint = endPoint;
 
             this.handleDataCallback = handleDataCallback;
-            this.finalDisconnectCallback = finalDisconnectCallback;
+            this.disconnectCallback = disconnectCallback;
         }
 
-        public TCPCore(TcpClient client, Action<short, byte[]> handleDataCallback = null, Action finalDisconnectCallback = null)
+        public TCPCore(TcpClient client, Action<short, byte[]> handleDataCallback = null, Action disconnectCallback = null)
         {
             // get tcp network stream
             this.client = client;
@@ -51,12 +50,12 @@ namespace Networking
             endPoint = (IPEndPoint)client.Client.RemoteEndPoint;
 
             this.handleDataCallback = handleDataCallback;
-            this.finalDisconnectCallback = finalDisconnectCallback;
+            this.disconnectCallback = disconnectCallback;
         }
 
         public void Open() { stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null); }
 
-        public void Send(Instructions instructionId, byte[] data = null) // sends an instruction 
+        public void Send(Instructions instructionId, byte[] data = null, AsyncCallback endCallback = null) // sends an instruction 
         {
             byte[] dataToSend;
 
@@ -66,7 +65,7 @@ namespace Networking
                 if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
                 else dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
 
-                stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+                stream.BeginWrite(dataToSend, 0, dataToSend.Length, endCallback, null);
             }
             catch (IOException) { Logging.LogError("Failed to send data!"); }
             catch (ObjectDisposedException) { Logging.LogError("Failed to send data! Socket is closed."); }
@@ -80,10 +79,14 @@ namespace Networking
         public void Close()
         {
             handleDataCallback = null;
-            finalDisconnectCallback = null;
+            disconnectCallback = null;
 
-            stream.Close();
-            client.Close();
+            try
+            {
+                stream.Close();
+                client.Close();
+            }
+            catch (ObjectDisposedException) { Logging.LogError($"TCP {endPoint} - Exception: Failed to close connection - it is already closed"); }
         }
 
 
@@ -100,7 +103,7 @@ namespace Networking
             {
                 // read header bytes, get their count, and add them to the general read bytes sum
                 int currentlyReadBytesCount = stream.EndRead(result);
-                if (currentlyReadBytesCount == 0) throw new ClientDisconnectedException();
+                if (currentlyReadBytesCount == 0) throw new IOException();
                 readBytesCount += currentlyReadBytesCount;
 
 
@@ -137,12 +140,12 @@ namespace Networking
                     stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
                 }
             }
-            catch (ClientDisconnectedException) { finalDisconnectCallback?.Invoke(); }
-            catch (IOException) { finalDisconnectCallback?.Invoke(); }
+            catch (ObjectDisposedException) { disconnectCallback?.Invoke(); }
+            catch (IOException) { disconnectCallback?.Invoke(); }
             catch (Exception exc)
             {
-                Logging.LogError(exc);
-                finalDisconnectCallback?.Invoke();
+                Logging.LogError($"TCP {endPoint} - Exception: {exc}");
+                disconnectCallback?.Invoke();
             }
         }
         byte[] headerBuffer = new byte[6];
@@ -155,7 +158,7 @@ namespace Networking
             {
                 // read data bytes, and get their count
                 int currentlyReadBytesCount = stream.EndRead(result);
-                if (currentlyReadBytesCount == 0) throw new ClientDisconnectedException();
+                if (currentlyReadBytesCount == 0) throw new IOException();
                 readBytesCount += currentlyReadBytesCount;
 
                 // if we read too few bytes, repeat reading process, until we read all of the necessary bytes
@@ -178,12 +181,12 @@ namespace Networking
                 // begin reading the next packet, or disconnect, depending on the client stste
                 stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null);
             }
-            catch (ClientDisconnectedException) { finalDisconnectCallback?.Invoke(); }
-            catch (IOException) { finalDisconnectCallback?.Invoke(); }
+            catch (ObjectDisposedException) { disconnectCallback?.Invoke(); }
+            catch (IOException) { disconnectCallback?.Invoke(); }
             catch (Exception exc)
             {
-                Logging.LogError(exc);
-                finalDisconnectCallback?.Invoke();
+                Logging.LogError($"TCP {endPoint} - Exception: {exc}");
+                disconnectCallback?.Invoke();
             }
         }
         byte[] dataBuffer = null;

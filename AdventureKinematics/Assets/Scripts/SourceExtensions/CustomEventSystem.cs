@@ -1,36 +1,43 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using Networking.Client;
 using UnityEngine.EventSystems;
 
 namespace SourceExtensions
 {
     public class CustomEventSystem : EventSystem
     {
+        public static CustomEventSystem instance = null;
+
         public static event Action onEarlyUpdate;
         public static event Action onNetworkUpdate;
-        public static event Action onBeforeDisconnect;
-        public static event Action onAfterUdpInvolved;
         public static event Action onBeforeConnect;
-        public static bool ConnectedToServer = false;
+        public static event Action onAfterUdpInvolved;
+        public static event Action onBeforeDisconnect;
+        public static event Action onAfterForceDisonnect;
 
-
+        protected override void Awake()
+        {
+            if (instance == null) instance = this;
+            else Logging.LogWarning("Two event systems in one scene!");
+        }
 
         protected override void Update()
         {
-            if(ConnectedToServer) onNetworkUpdate?.Invoke();
+            if (instance != this) return;
+
+            onNetworkUpdate?.Invoke();
 
             onEarlyUpdate?.Invoke();
 
             base.Update();
         }
 
-        public static void NotifyAboutDisconnect() { ConnectedToServer = true; onBeforeDisconnect?.Invoke(); }
+        public static void NotifyAboutConnect() { onBeforeConnect?.Invoke(); }
 
         public static void NotifyAboutInvolvingUdp() => onAfterUdpInvolved?.Invoke();
 
-        public static void NotifyAboutConnect() { ConnectedToServer = true;  onBeforeConnect?.Invoke(); }
+        public static void NotifyAboutDisconnect() { onBeforeDisconnect?.Invoke(); }
 
+        public static void NotifyAboutForceDisconnect() { onAfterForceDisonnect?.Invoke(); }
     }
 }

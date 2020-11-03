@@ -46,7 +46,7 @@ namespace Networking
             this.handleDataCallback = handleDataCallback;
         }
 
-        public void Send(Instructions instructionId, byte[] data = null) // sends an instruction 
+        public void Send(Instructions instructionId, byte[] data = null, AsyncCallback endCallback = null) // sends an instruction 
         {
             byte[] dataToSend;
 
@@ -55,8 +55,8 @@ namespace Networking
                 if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
                 else dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
 
-                if (isConnected) client.BeginSend(dataToSend, dataToSend.Length, null, null); 
-                else client.BeginSend(dataToSend, dataToSend.Length, endPoint, null, null);
+                if (isConnected) client.BeginSend(dataToSend, dataToSend.Length, endCallback, null); 
+                else client.BeginSend(dataToSend, dataToSend.Length, endPoint, endCallback, null);
             }
             catch (IOException) { Logging.LogError("Failed to send data!"); }
             catch (ObjectDisposedException) { Logging.LogError("Failed to send data! Socket is closed."); }

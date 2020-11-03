@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-
+using static SourceExtensions.UnlockObject;
 
 namespace Networking.Server
 {
@@ -31,10 +31,13 @@ namespace Networking.Server
         {
             this.client = client;
 
+            client.onBeforeConnect += BeforeConenct;
+            client.onAfterConnect += AfterConnect;
             client.onAfterUdpInvolved += AfterUdpInvolved;
             client.onBeforeDisconnect += BeforeDisconnect;
             client.onBeforeForceDisconnect += BeforeForceDisconnect;
-            client.onBeforeConnect += BeforeConenct;
+
+            Awake();
         }
 
         public T Instantiate<T>() where T : ServerSideObject, new() // 
@@ -47,12 +50,12 @@ namespace Networking.Server
 
         public virtual void Delete()
         {
-            client = null;
 
+            client.onBeforeConnect -= BeforeConenct;
+            client.onAfterConnect -= AfterConnect;
             client.onAfterUdpInvolved -= AfterUdpInvolved;
             client.onBeforeDisconnect -= BeforeDisconnect;
             client.onBeforeForceDisconnect -= BeforeForceDisconnect;
-            client.onBeforeConnect -= BeforeConenct; 
         }
 
         public static void RegisterAllInstructions()    // makes all instructions ready for usage 
@@ -72,13 +75,17 @@ namespace Networking.Server
 
 
 
+        public virtual void Awake() { }
+
         protected virtual void BeforeConenct() { }
+
+        protected virtual void AfterConnect() { }
+
+        protected virtual void AfterUdpInvolved() { }
 
         protected virtual void BeforeDisconnect() { }
 
         protected virtual void BeforeForceDisconnect() { }
-
-        protected virtual void AfterUdpInvolved() { }
 
 
 
