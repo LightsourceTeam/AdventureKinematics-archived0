@@ -33,7 +33,7 @@ public class ItemController : Controller
   
     protected override void Update()
     {
-        if (inventory.selectedSlot.item != null)
+        if (inventory?.selectedSlot?.item != null)
         {
             if (lastJState)
             {

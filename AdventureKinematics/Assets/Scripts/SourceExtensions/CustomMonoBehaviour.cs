@@ -33,8 +33,14 @@ namespace SourceExtensions
         #region EVENTS
 
 
+
+        public void Start()
+        {
+            if (CustomEventSystem.current == null) throw new NoCustomEventSystemException("No currently active custcom event system has been found!");
+        }
+
         protected virtual void OnEnable() 
-        { 
+        {
             CustomEventSystem.onEarlyUpdate += EarlyUpdate;
             CustomEventSystem.onNetworkUpdate += NetworkUpdate; 
             CustomEventSystem.onBeforeDisconnect += BeforeDisconnect;
@@ -80,6 +86,8 @@ namespace SourceExtensions
         protected virtual void OnAppQuit() { }
 
         protected virtual void OnAppFinalQuit() { }
+
+
 
         #endregion
         //--------------------------------------------------

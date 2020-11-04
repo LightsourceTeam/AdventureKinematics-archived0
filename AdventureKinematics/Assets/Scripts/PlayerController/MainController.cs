@@ -28,7 +28,7 @@ public class MainController : MonoBehaviour
         playerCollider = GetComponent<CapsuleCollider2D>();
 
         movementController.Init(this);
-        inventorySystem.Init(this);
+        // inventorySystem.Init(this);
         itemController.Init(this);
         interactionController.Init(this);
         abilityController.Init(this);

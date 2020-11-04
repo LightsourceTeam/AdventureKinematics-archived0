@@ -1,12 +1,12 @@
 ﻿using System;
 using Networking.Client;
-using UnityEngine.EventSystems;
+using UnityEngine;
 
 namespace SourceExtensions
 {
-    public class CustomEventSystem : EventSystem
+    public class CustomEventSystem : MonoBehaviour
     {
-        public static CustomEventSystem instance = null;
+        public static CustomEventSystem current = null;
 
         public static event Action onEarlyUpdate;
         public static event Action onNetworkUpdate;
@@ -15,21 +15,28 @@ namespace SourceExtensions
         public static event Action onBeforeDisconnect;
         public static event Action onAfterForceDisonnect;
 
-        protected override void Awake()
+        protected void Awake()
         {
-            if (instance == null) instance = this;
-            else Logging.LogWarning("Two event systems in one scene!");
+            if (current == null) current = this;
+            else
+            {
+                Logging.LogWarning("Two event systems in one scene!");
+                Destroy(gameObject);
+            }
         }
 
-        protected override void Update()
+        protected void Update()
         {
-            if (instance != this) return;
+            if (current != this) return;
 
             onNetworkUpdate?.Invoke();
 
             onEarlyUpdate?.Invoke();
+        }
 
-            base.Update();
+        protected void OnDestroy()
+        {
+            current = null;
         }
 
         public static void NotifyAboutConnect() { onBeforeConnect?.Invoke(); }
@@ -39,5 +46,10 @@ namespace SourceExtensions
         public static void NotifyAboutDisconnect() { onBeforeDisconnect?.Invoke(); }
 
         public static void NotifyAboutForceDisconnect() { onAfterForceDisonnect?.Invoke(); }
+    }
+
+    public class NoCustomEventSystemException : Exception 
+    {
+        public NoCustomEventSystemException(string message) : base(message) { }
     }
 }
