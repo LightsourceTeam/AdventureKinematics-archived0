@@ -137,7 +137,6 @@ namespace Networking.Server
             }
         }
 
-
         public void SwitchToBufferingMode() // switches execution method to buffering, which means all the received instructions will be buffered instead of being executed in place 
         {
             lock (executionLock) { if (!bufferInstructions) bufferInstructions = true; }
@@ -174,7 +173,6 @@ namespace Networking.Server
                     client = null;
 
                     tcp.Close();
-                    Server.server.UnregisterUdp(udp?.endPoint);
                     registeredInstructionClasses.Clear();
                 }
                 catch (Exception Exc) { Logging.LogCritical($"Client {clientId}: while deleting, an exception occured: " + Exc); }

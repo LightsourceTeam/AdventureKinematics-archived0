@@ -34,7 +34,7 @@ namespace SourceExtensions
 
 
 
-        public void Start()
+        private void Start()
         {
             if (CustomEventSystem.current == null) throw new NoCustomEventSystemException("No currently active custcom event system has been found!");
         }

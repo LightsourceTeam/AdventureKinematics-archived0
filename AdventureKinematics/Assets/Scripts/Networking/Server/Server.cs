@@ -90,19 +90,13 @@ namespace Networking.Server
 
 
 
-        public Task Shutdown()
-        {
-            Logging.Log("Warning: Server has been put into shutdown state! Waiting until connected clients leave...");
-            shouldLive = false;
-
-            // needs remastering
-
-            return Task.Run(() => { foreach (var client in clients) client.Value.Delete(); });
-        }
-
         public void RemoveClient(Client client) { if (client == null) return; lock (clients) clients.Remove(client.clientId); }
 
-        public void RegisterUdp(IPEndPoint endPoint, Client client) { if (endPoint == null) return; lock (udpConnections) udpConnections[endPoint] = client; }
+        public void RegisterUdp(IPEndPoint endPoint, Client client)
+        { 
+            if (endPoint == null) return; 
+            lock (udpConnections) udpConnections[endPoint] = client; 
+        }
 
         public bool UnregisterUdp(IPEndPoint endPoint) { if (endPoint == null) return false; lock (udpConnections) return udpConnections.Remove(endPoint); }
 
@@ -147,7 +141,6 @@ namespace Networking.Server
             catch (ObjectDisposedException)
             {
                 Logging.LogCritical("UDP LISTENER IS CLOSED!!! Shutting down the server...");
-                Shutdown();
                 return;
             }
 

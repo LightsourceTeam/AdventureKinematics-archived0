@@ -20,7 +20,7 @@ namespace Networking.Client
 
 
 
-        public static Client client = null;     // the main instance of the client
+        public static Client current = null;     // the main instance of the client
         public static IPEndPoint tcpEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23852);
         public static IPEndPoint udpEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23853);
 
@@ -43,25 +43,34 @@ namespace Networking.Client
 
         public void Connect()    //  initializes a connection with client 
         {
-            Connected = true;
+            try
+            {
+                Connected = true;
 
-            // set static instance of the client
-            if (client == null) client = this;
-            else if (client != this) Logging.LogError(this + ": Failed to set active instance - it already is set to " + client);
-            else Logging.LogWarning(this + ": No need to setup this as active object - it already is");
+                // set static instance of the client
+                if (current == null) current = this;
+                else if (current != this) Logging.LogError(this + ": Failed to set active instance - it already is set to " + current);
+                else Logging.LogWarning(this + ": No need to setup this as active object - it already is");
 
-            Logging.LogInfo("Building connection to server...");
+                Logging.LogInfo("Building connection to server...");
 
-            // get tcp network stream
-            tcp = new TCPCore(tcpEndPoint, HandleInstruction, Delete);
-
-
-            Logging.LogAccept("Successfully connected. Starting data transfer protocol...");
+                // get tcp network stream
+                tcp = new TCPCore(tcpEndPoint, HandleInstruction, Delete);
 
 
-            // now we are connected and ready to begin data reading
-            CustomEventSystem.NotifyAboutConnect();
-            tcp.Open();
+                Logging.LogAccept("Successfully connected. Starting data transfer protocol...");
+
+
+                // now we are connected and ready to begin data reading
+                CustomEventSystem.NotifyAboutConnect();
+                tcp.Open();
+            }
+            catch (SocketException exc) 
+            {
+                if (current == this) current = null;
+                Destroy(gameObject);
+                Logging.LogCritical($"SocketException: {exc}"); 
+            }
         }
 
         public void Disconnect()              // safely disconnects client 
@@ -168,7 +177,7 @@ namespace Networking.Client
 
                 Connected = false;
                 availableUdp = false;
-                client = null;
+                current = null;
                 Deleted = true;
 
                 tcp.Close();
@@ -180,22 +189,24 @@ namespace Networking.Client
             }
         }
 
-        public void SafeSessionEnd()
+        public void EndSession(bool waitTillFinish=true)    // disconnects, checks for pending instructions and waits (if needed) for client to be deleted.
         {
             lock (executionLock)
             {
+                if (Deleted) return;
+
                 // signalize that client goes to sleep
                 Disconnect();
 
                 // and keep executing instructions from server, until disconnection is confirmed
                 Tuple<short, byte[]> inst = null;
-                while (inst?.Item1 != (short)Instructions.Disconnect)
+                while (inst?.Item1 != (short)Instructions.Disconnect && !Deleted)
                 {
                     inst = WaitForInstruction();
                     Execute(inst);
                 }
 
-                if (!Deleted)
+                if (waitTillFinish && !Deleted)
                 {
                     lock (deleteSignalizer)
                     {
@@ -246,10 +257,7 @@ namespace Networking.Client
         protected override void AfterUdpInvolved() { }
 
 
-        protected void OnApplicationQuit()
-        {
-            SafeSessionEnd();
-        }
+        protected void OnApplicationQuit() => EndSession();
 
 
 

@@ -111,11 +111,8 @@ namespace Networking
 
                 client.BeginReceive(OnDataReceive, null);
             }
-            catch (ObjectDisposedException)
-            {
-                Close();
-                return; // Connection closed
-            }
+            catch (IOException) { Close(); }
+            catch (ObjectDisposedException) { Close(); }
         }
 
         public void OnDataReceive(Bytes.Couple data)     // server version. accepts data, and processes it 

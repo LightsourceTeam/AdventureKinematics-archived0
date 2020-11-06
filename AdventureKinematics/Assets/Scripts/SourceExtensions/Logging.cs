@@ -87,7 +87,9 @@ namespace SourceExtensions
             Console.WriteLine($"  [X]  : {DateTime.UtcNow} : {message}");
             Console.ForegroundColor = color;
 #else
-            Debug.LogError($"<color=#7C0A02> {message} </color>");
+            //Debug.Log(" CRITICAL ERROR: " + message + );
+            Debug.LogAssertion($"<color=#7c0a02ff> CRITICAL: </color> {message}");
+
 #endif
         }
     }
