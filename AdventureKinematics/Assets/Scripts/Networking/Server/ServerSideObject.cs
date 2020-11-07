@@ -15,8 +15,6 @@ namespace Networking.Server
 
         protected Client client;
 
-        public static Dictionary<short, MethodInfo> instructions { get; private set; }  // contains all the methods marked with Instruction attribute
-
 
 
         #endregion
@@ -56,15 +54,6 @@ namespace Networking.Server
             client.onAfterUdpInvolved -= AfterUdpInvolved;
             client.onBeforeDisconnect -= BeforeDisconnect;
             client.onBeforeForceDisconnect -= BeforeForceDisconnect;
-        }
-
-        public static void RegisterAllInstructions()    // makes all instructions ready for usage 
-        {
-            if (instructions == null)
-                instructions = (from type in Assembly.GetExecutingAssembly().GetTypes()
-                                from method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                                where method.GetCustomAttribute(typeof(Client.InstructionAttribute)) != null
-                                select method).ToDictionary(x => (x.GetCustomAttribute(typeof(Client.InstructionAttribute)) as Client.InstructionAttribute).id);
         }
 
 

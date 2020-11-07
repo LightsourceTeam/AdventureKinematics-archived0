@@ -27,7 +27,8 @@ namespace Networking.Client
 
         // connection-necessary params
         public TCPCore tcp { get; private set; }
-        public UDPCore udp { get; private set; }       // TODO
+        public UDPCore udp { get; private set; } 
+        public InstructionHandler instructionHandler { get; private set; }
 
 
         public int clientId;                    // client unique connection identifier, TODO replace it with something not stupid
@@ -46,6 +47,7 @@ namespace Networking.Client
             try
             {
                 Connected = true;
+                
 
                 // set static instance of the client
                 if (current == null) current = this;
@@ -54,8 +56,13 @@ namespace Networking.Client
 
                 Logging.LogInfo("Building connection to server...");
 
-                // get tcp network stream
-                tcp = new TCPCore(tcpEndPoint, HandleInstruction, Delete);
+                // get tcp and instruction handler ready
+                executionLock = new object ();
+                instructionHandler = new InstructionHandler(executionLock);
+                tcp = new TCPCore(tcpEndPoint, instructionHandler.HandleInstruction, () => { lock (executionLock) { Valid = false; availableTcp = false; } });
+                instructionHandler.SwitchToBufferingMode();
+                availableTcp = true;
+                Valid = true;
 
 
                 Logging.LogAccept("Successfully connected. Starting data transfer protocol...");
@@ -68,6 +75,17 @@ namespace Networking.Client
             catch (SocketException exc) 
             {
                 if (current == this) current = null;
+                tcp?.Close();
+                udp?.Close();
+                instructionHandler?.Deactivate();
+
+                tcp = null;
+                udp = null;
+                instructionHandler = null;
+                Connected = false;
+                availableTcp = false;
+                Valid = false;
+
                 Destroy(gameObject);
                 Logging.LogCritical($"SocketException: {exc}"); 
             }
@@ -84,83 +102,7 @@ namespace Networking.Client
                 // invoke event before disconnecting
                 try { CustomEventSystem.NotifyAboutDisconnect(); } finally { }
 
-                // send instruction to server, and wait 
-                try
-                {
-                    tcp.Send(Instructions.Disconnect, new byte[] { 0 });
-                }
-                catch (ObjectDisposedException) { Logging.LogError($"Disconnecting was turned down: failed to send data - socket is closed."); }
-                catch (SocketException sockExc) { Logging.LogCritical($"Socket exception occured: {sockExc}"); }
-                catch (Exception exc) { Logging.LogError($"Unhandled exception occured while disconnecting: {exc}"); }
-            }
-        }
-
-        public bool RegisterInstructions(object objToRegisterInstructionsFor, bool reRegisterIfPresent = false)    // registers instructions for the specified class instance 
-        {
-            lock (executionLock)
-            {
-                if (!reRegisterIfPresent && registeredInstructionClasses.ContainsKey(objToRegisterInstructionsFor.GetType())) return false;
-
-                registeredInstructionClasses[objToRegisterInstructionsFor.GetType()] = objToRegisterInstructionsFor; return true;
-            }
-        }
-
-        public bool Execute(Tuple<short, byte[]> instruction)
-        {
-            try
-            {
-                MethodInfo instructionMethod = instructions[instruction.Item1];
-                instructionMethod.Invoke(registeredInstructionClasses[instructionMethod.DeclaringType], new object[] { instruction.Item2 });
-                return true;
-            }
-            catch (KeyNotFoundException) { Logging.LogError($"Instruction with id {instruction?.Item1} does not exist or isn't declared properly!"); }
-            catch (Exception exc) { Logging.LogError($"Unhandled Exception occured while executing an instruction with id {instruction?.Item1}: {exc}"); }
-            return false;
-        }
-
-        public void ExecuteOneBuffered()    // execute one instruction from the buffered ones 
-        {
-            Tuple<short, byte[]> instruction = null;
-
-            lock (executionLock)
-            {
-                if (instructionsToExecute.Count == 0) return;
-                instruction = instructionsToExecute.Pop();
-                Execute(instruction);
-            }
-        }
-
-        public void ExecuteAllBuffered()    // execute all the buffered instructions 
-        {
-            lock (executionLock)
-            {
-                while (instructionsToExecute.Count > 0) ExecuteOneBuffered();
-            }
-        }
-
-        public Tuple<short, byte[]> WaitForInstruction()
-        {
-            lock (executionLock)
-            {
-                if (!bufferInstructions) return null;
-                if (instructionsToExecute.Count == 0) Monitor.Wait(executionLock);
-                return instructionsToExecute.Pop();
-            }
-        }
-
-        public void SwitchToBufferingMode() // switches execution method to buffering, which means all the received instructions will be buffered instead of being executed in place 
-        {
-            lock (executionLock) { if (!bufferInstructions) bufferInstructions = true; }
-        }
-
-        public void SwitchToEventMode(bool executeBuffered = true) // switches execution method to event-driven, which means all the received instructions will be executed in place 
-        {
-            lock (executionLock)
-            {
-                if (!bufferInstructions) return;
-
-                bufferInstructions = false;
-                if (executeBuffered) ExecuteAllBuffered();
+                tcp.Send(Instructions.Disconnect, new byte[] { 0 });       
             }
         }
 
@@ -175,50 +117,64 @@ namespace Networking.Client
                 if (Connected) try { CustomEventSystem.NotifyAboutForceDisconnect(); } finally { }
 
 
-                Connected = false;
-                availableUdp = false;
-                current = null;
-                Deleted = true;
-
+                instructionHandler.Deactivate();
                 tcp.Close();
                 udp?.Close();
 
-                registeredInstructionClasses.Clear();
+                Connected = false;
+                availableUdp = false;
+                availableTcp = false;
 
-                lock (deleteSignalizer) Monitor.Pulse(deleteSignalizer);
+                if (current == this) current = null;
+                tcp = null;
+                udp = null;
+                instructionHandler = null;
+
+                Deleted = true;
+
+                Destroy(gameObject);
             }
         }
 
-        public void EndSession(bool waitTillFinish=true)    // disconnects, checks for pending instructions and waits (if needed) for client to be deleted.
+        public void EndSession()    // disconnects, checks for pending instructions and waits (if needed) for client to be deleted.
         {
             lock (executionLock)
             {
                 if (Deleted) return;
 
-                // signalize that client goes to sleep
+                // disconnect, if possible
                 Disconnect();
 
-                // and keep executing instructions from server, until disconnection is confirmed
+                // execute gotten instructions
                 Tuple<short, byte[]> inst = null;
-                while (inst?.Item1 != (short)Instructions.Disconnect && !Deleted)
+                while (inst?.Item1 != (short)Instructions.Disconnect)
                 {
-                    inst = WaitForInstruction();
-                    Execute(inst);
-                }
-
-                if (waitTillFinish && !Deleted)
-                {
-                    lock (deleteSignalizer)
+                    if (availableTcp)
                     {
-                        using (unlock(executionLock))
-                        {
-                            Monitor.Wait(deleteSignalizer);
-                        }
+                        inst = instructionHandler.WaitForInstruction();
+                        instructionHandler.Execute(inst);
+                    }
+                    else
+                    {
+                        instructionHandler.ExecuteAllBuffered();
+                        break;
                     }
                 }
+
+
+
+                Delete();
             }
         }
 
+        public void CheckIfValid()
+        {
+            lock (executionLock)
+            {
+                if (Valid) return;
+                else EndSession();
+            }
+        }
 
 
         #endregion
@@ -230,7 +186,7 @@ namespace Networking.Client
         protected void Awake()
         {
             // initialize server-sent methods
-            RegisterAllInstructions();
+            InstructionHandler.RegisterAllInstructions(typeof(InstructionAttribute));
 
             //Bytes.TestFunction();
         }
@@ -242,13 +198,15 @@ namespace Networking.Client
 
         protected override void BeforeConnect()
         {
-            RegisterInstructions(this);
+            instructionHandler.RegisterInstructions(this);
         }
 
         protected override void NetworkUpdate()
         {
             if (availableUdp) udp.Send(Instructions.HelloWorld, Bytes.ToBytes($"{i++}"));
-            ExecuteAllBuffered();
+            instructionHandler?.ExecuteAllBuffered();
+
+            CheckIfValid();
         }
         int i = 0;
 
@@ -291,7 +249,6 @@ namespace Networking.Client
                 case 0:
                     if (Connected) CustomEventSystem.NotifyAboutDisconnect();
                     Connected = false;
-
                     tcp.Send(Instructions.Disconnect, new byte[] { 1 });
                     break;
                 case 1:
@@ -309,7 +266,7 @@ namespace Networking.Client
                 case 0:
                     Logging.LogInfo($"A server request to involve udp was initialed...");
 
-                    udp = new UDPCore(HandleInstruction);
+                    udp = new UDPCore(instructionHandler.HandleInstruction);
                     udp.Open(udpEndPoint);
                     tcp.Send(Instructions.RequestUdp, Bytes.ToBytes(((IPEndPoint)udp.client.Client.LocalEndPoint).Port));
 
@@ -333,42 +290,11 @@ namespace Networking.Client
 
 
 
-        // instructions
-        private Dictionary<Type, object> registeredInstructionClasses = new Dictionary<Type, object>();        // dictionary of the registered classes which contain instruction
-
-
-        // vars for supportiong instructions buffering
-        private bool bufferInstructions = true;
-        private Stack<Tuple<short, byte[]>> instructionsToExecute = new Stack<Tuple<short, byte[]>>();
-
         private bool Connected = false;
         private bool availableUdp = false;
+        private bool availableTcp = false;
         private bool Deleted = false;
-        private object deleteSignalizer = new object();
-
-
-        private void HandleInstruction(short instructionId, byte[] data)    // specifies the metods of handling received data 
-        {
-            lock (executionLock)
-            {
-                if (Deleted) return;
-
-                try
-                {
-                    if (bufferInstructions)
-                    {
-                        instructionsToExecute.Push(new Tuple<short, byte[]>(instructionId, data));
-                        Monitor.Pulse(executionLock);
-                    }
-                    else
-                    {
-                        MethodInfo instruction = instructions[instructionId];
-                        instruction?.Invoke(registeredInstructionClasses[instruction.DeclaringType], new object[] { data });
-                    }
-                }
-                catch (KeyNotFoundException) { Logging.LogError($"Client {clientId}: instruction with id {instructionId} does not exist or isn't declared properly!"); }
-            }
-        }
+        private bool Valid = false;
 
 
 
@@ -390,7 +316,7 @@ namespace Networking.Client
             }
         }
 
-        public object executionLock { get; private set; } = new object();
+        public object executionLock { get; private set; }
 
 
 

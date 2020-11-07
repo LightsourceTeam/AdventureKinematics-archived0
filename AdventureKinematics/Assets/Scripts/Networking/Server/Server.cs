@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
@@ -24,8 +25,8 @@ namespace Networking.Server
         public static IPEndPoint tcpEndPoint = new IPEndPoint(IPAddress.Any, 23852);
         public static IPEndPoint udpEndPoint = new IPEndPoint(IPAddress.Any, 23853);
 
-        public static Dictionary<int, Client> clients = new Dictionary<int, Client>();
-        public static Dictionary<IPEndPoint, Client> udpConnections = new Dictionary<IPEndPoint, Client>();
+        public static ConcurrentDictionary<int, Client> clients = new ConcurrentDictionary<int, Client>();
+        public static ConcurrentDictionary<IPEndPoint, Client> udpConnections = new ConcurrentDictionary<IPEndPoint, Client>();
 
         public TcpListener tcpListener { get; private set; } = null;
         public UdpClient udpListener { get; private set; } = null;
@@ -36,14 +37,14 @@ namespace Networking.Server
 
         #endregion
         //--------------------------------------------------
-        #region SERVER INITIALIZING
+        #region ADMINISTRATIVE
         /// initializing server
 
 
 
         private void Awake()       // unity function for starting server 
         {
-            ServerSideObject.RegisterAllInstructions();
+            InstructionHandler.RegisterAllInstructions(typeof(Client.InstructionAttribute));
             Raise();
         }
 
@@ -81,16 +82,48 @@ namespace Networking.Server
             Logging.LogAccept($"Done! Starting to accept clients on {tcpEndPoint}...");
         }            
 
+        public Task Shutdown()
+        {
+            return Task.Run(() => 
+            {
+                shouldLive = false;
+                while (!clients.IsEmpty)
+                    foreach (var client in clients)
+                        client.Value.Delete();
+                    });
+        }
+
 
 
         #endregion
         //--------------------------------------------------
-        #region ADMINISTRATIVE
+        #region EVENTS
+
+
+
+        public void OnApplicationQuit()
+        {
+            Shutdown().Wait();
+        }
+
+
+
+
+        #endregion
+        //--------------------------------------------------
+        #region CALLBACKS
         /// initializing administator functions
 
 
 
-        public void RemoveClient(Client client) { if (client == null) return; lock (clients) clients.Remove(client.clientId); }
+        public Client RemoveClient(Client client) 
+        { if (client == null) return null;
+
+
+            clients?.TryRemove(client.clientId, out client);
+
+            return client;
+        }
 
         public void RegisterUdp(IPEndPoint endPoint, Client client)
         { 
@@ -98,7 +131,14 @@ namespace Networking.Server
             lock (udpConnections) udpConnections[endPoint] = client; 
         }
 
-        public bool UnregisterUdp(IPEndPoint endPoint) { if (endPoint == null) return false; lock (udpConnections) return udpConnections.Remove(endPoint); }
+        public Client UnregisterUdp(IPEndPoint endPoint) 
+        { 
+            if (endPoint == null) return null;
+
+            Client removed = null;
+            udpConnections.TryRemove(endPoint, out removed);
+            return removed;
+        }
 
 
 
@@ -117,7 +157,9 @@ namespace Networking.Server
             if (shouldLive) tcpListener.BeginAcceptTcpClient(TCPConnectCallback, null);
 
             Client client = new Client();
-            clients.Add(lastId, client);
+
+            if (!clients.TryAdd(lastId, client)) { tcp.Close(); return; }
+            
             client.Connect(tcp, lastId);
         }
         bool shouldLive { get { lock (this) return isAlive; } set { lock (this) isAlive = value; } }
@@ -134,7 +176,7 @@ namespace Networking.Server
                 udpListener.BeginReceive(UDPManageDataCallback, null);
                 
                 Client destination = null;
-                lock (udpConnections) if (!udpConnections.TryGetValue(endPoint, out destination)) return;
+                if (!udpConnections.TryGetValue(endPoint, out destination)) return;
 
                 destination.udp.OnDataReceive(data);
             }
