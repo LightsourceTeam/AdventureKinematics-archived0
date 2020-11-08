@@ -3,6 +3,7 @@ using System.Net;
 using System;
 using SourceExtensions;
 using System.IO;
+using System.Threading.Tasks;
 
 
 
@@ -55,7 +56,7 @@ namespace Networking
 
         public void Open() { stream.BeginRead(headerBuffer, 0, 6, OnHeaderReceive, null); }
 
-        public void Send(Instructions instructionId, byte[] data = null, AsyncCallback endCallback = null) // sends an instruction 
+        public Task Send(Instructions instructionId, byte[] data = null, AsyncCallback endCallback = null) // sends an instruction 
         {
             byte[] dataToSend;
 
@@ -65,10 +66,12 @@ namespace Networking
                 if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
                 else dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
 
-                stream.BeginWrite(dataToSend, 0, dataToSend.Length, endCallback, null);
+                return stream.WriteAsync(dataToSend, 0, dataToSend.Length);
             }
             catch (IOException) { Logging.LogError("Failed to send data!"); }
             catch (ObjectDisposedException) { Logging.LogError("Failed to send data! Socket is closed."); }
+
+            return null;
         }
 
         public void Shutdown(SocketShutdown how)

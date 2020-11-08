@@ -16,6 +16,7 @@ namespace Networking
         Disconnect,         // disconnection
         ForceDisconnect,
         RequestUdp,         // gets called when server requests Udp
+        NotifyShutdown,
 
         // passive-gaming instructions
 

@@ -20,7 +20,7 @@ namespace Networking.Server
         public TCPCore tcp { get; private set; }
         public UDPCore udp { get; private set; }
         public InstructionHandler instructionHandler { get; private set; }
-        public object executionLock { get; private set; }
+        public object executionLock { get; private set; } = new object();
 
 
         public int clientId;                // client unique connection identifier, TODO replace it with something not stupid
@@ -46,7 +46,6 @@ namespace Networking.Server
 
             // get tcp and instruction handler ready
             clientId = id;
-            executionLock = new object();
             instructionHandler = new InstructionHandler(executionLock);
             this.tcp = new TCPCore(tcp, instructionHandler.HandleInstruction);
 
@@ -57,6 +56,7 @@ namespace Networking.Server
             onBeforeConnect?.Invoke();
             this.tcp.Open();
             onAfterConnect?.Invoke();
+
         }
 
         public void InvolveUdp()
@@ -68,6 +68,12 @@ namespace Networking.Server
                 udp = new UDPCore(Server.server.udpListener, instructionHandler.HandleInstruction);
             }
             tcp.Send(Instructions.RequestUdp, new byte[] { 0 });
+        }
+
+        public void NotifyShutdown(byte[] reason = null)
+        {
+            Logging.Log("Hello");
+            lock (executionLock) tcp?.Send(Instructions.NotifyShutdown, reason);
         }
 
         public void Disconnect()        // safely disconnects client 

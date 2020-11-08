@@ -34,7 +34,6 @@ namespace Networking.Server
         bool isAlive = false;
 
 
-
         #endregion
         //--------------------------------------------------
         #region ADMINISTRATIVE
@@ -56,6 +55,8 @@ namespace Networking.Server
             if (server == null) server = this;
             else if (server != this) Logging.LogError(this + ": You can not have two servers run simultaneously!");
             else Logging.LogWarning(this + ": No need to set it as active server - it already has this value");
+
+            ///Application.wantsToQuit += OnServerQuit;             // WORKS BAD
 
             Logging.Log("\n\n");
 
@@ -86,11 +87,22 @@ namespace Networking.Server
         {
             return Task.Run(() => 
             {
-                shouldLive = false;
+                shouldAcceptNewConnections = false;
                 while (!clients.IsEmpty)
                     foreach (var client in clients)
                         client.Value.Delete();
                     });
+        }
+
+        public Task NotifyShutdown(string reason)
+        {
+            byte[] reasonInBytes = Bytes.ToBytes(reason);
+            return Task.Run(() =>
+            {
+                shouldAcceptNewConnections = false;
+                foreach (var client in clients)
+                    client.Value.NotifyShutdown(reasonInBytes);
+            });
         }
 
 
@@ -101,9 +113,26 @@ namespace Networking.Server
 
 
 
-        public void OnApplicationQuit()
+        /// WARNING! Works bad, needs more attention
+        public bool OnServerQuit()
         {
-            Shutdown().Wait();
+            Task.Run(() =>
+            {
+                try
+                {
+                    int n = 5;
+
+
+                    for (int i = 0; i < n; i++)
+                    {
+                        NotifyShutdown($"Test {i}").Wait();
+                    }
+                    Task.Delay(50000).Wait();
+                    Shutdown().Wait();
+                }
+                catch (Exception exc) { Logging.Log(exc); }
+            });
+            return false;
         }
 
 
@@ -151,18 +180,22 @@ namespace Networking.Server
 
         private void TCPConnectCallback(IAsyncResult result)
         {
-            // accept new client, and start listening for the new one.
+            // accept new client, and (if allowed) start listening for the new one.
             TcpClient tcp = tcpListener.EndAcceptTcpClient(result);
             lastId++;
-            if (shouldLive) tcpListener.BeginAcceptTcpClient(TCPConnectCallback, null);
+            if (shouldAcceptNewConnections) tcpListener.BeginAcceptTcpClient(TCPConnectCallback, null);
+            else tcpListener.Stop();
 
+            // initialize a new client instance, and connect it
             Client client = new Client();
+            lock (client.executionLock)
+            {
+                if (!clients.TryAdd(lastId, client)) { tcp.Close(); return; }
 
-            if (!clients.TryAdd(lastId, client)) { tcp.Close(); return; }
-            
-            client.Connect(tcp, lastId);
+                client.Connect(tcp, lastId);
+            }
         }
-        bool shouldLive { get { lock (this) return isAlive; } set { lock (this) isAlive = value; } }
+        bool shouldAcceptNewConnections { get { lock (this) return isAlive; } set { lock (this) isAlive = value; } }
         int lastId = 0;
 
         private void UDPManageDataCallback(IAsyncResult result)

@@ -190,6 +190,7 @@ namespace Networking
                 registeredInstructionClasses.Clear();
                 registeredInstructionClasses = null;
                 alive = false;
+                Monitor.PulseAll(executionLock);
             }
         }
 

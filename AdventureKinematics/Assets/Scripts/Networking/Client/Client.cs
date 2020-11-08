@@ -29,6 +29,7 @@ namespace Networking.Client
         public TCPCore tcp { get; private set; }
         public UDPCore udp { get; private set; } 
         public InstructionHandler instructionHandler { get; private set; }
+        public object executionLock { get; private set; } = new object();
 
 
         public int clientId;                    // client unique connection identifier, TODO replace it with something not stupid
@@ -44,50 +45,50 @@ namespace Networking.Client
 
         public void Connect()    //  initializes a connection with client 
         {
-            try
+            lock (executionLock)
             {
-                Connected = true;
-                
-
-                // set static instance of the client
-                if (current == null) current = this;
-                else if (current != this) Logging.LogError(this + ": Failed to set active instance - it already is set to " + current);
-                else Logging.LogWarning(this + ": No need to setup this as active object - it already is");
-
-                Logging.LogInfo("Building connection to server...");
-
-                // get tcp and instruction handler ready
-                executionLock = new object ();
-                instructionHandler = new InstructionHandler(executionLock);
-                tcp = new TCPCore(tcpEndPoint, instructionHandler.HandleInstruction, () => { lock (executionLock) { Valid = false; availableTcp = false; } });
-                instructionHandler.SwitchToBufferingMode();
-                availableTcp = true;
-                Valid = true;
+                try
+                {
+                    Connected = true;
 
 
-                Logging.LogAccept("Successfully connected. Starting data transfer protocol...");
+                    // set static instance of the client
+                    if (current == null) current = this;
+                    else if (current != this) Logging.LogError(this + ": Failed to set active instance - it already is set to " + current);
+                    else Logging.LogWarning(this + ": No need to setup this as active object - it already is");
+
+                    Logging.LogInfo("Building connection to server...");
+
+                    // get tcp and instruction handler ready
+                    instructionHandler = new InstructionHandler(executionLock);
+                    tcp = new TCPCore(tcpEndPoint, instructionHandler.HandleInstruction, () => { lock (executionLock) { availableTcp = false; instructionHandler.Deactivate(); } });
+                    instructionHandler.SwitchToBufferingMode();
+                    availableTcp = true;
 
 
-                // now we are connected and ready to begin data reading
-                CustomEventSystem.NotifyAboutConnect();
-                tcp.Open();
-            }
-            catch (SocketException exc) 
-            {
-                if (current == this) current = null;
-                tcp?.Close();
-                udp?.Close();
-                instructionHandler?.Deactivate();
+                    Logging.LogAccept("Successfully connected. Starting data transfer protocol...");
 
-                tcp = null;
-                udp = null;
-                instructionHandler = null;
-                Connected = false;
-                availableTcp = false;
-                Valid = false;
 
-                Destroy(gameObject);
-                Logging.LogCritical($"SocketException: {exc}"); 
+                    // now we are connected and ready to begin data reading
+                    CustomEventSystem.NotifyAboutConnect();
+                    tcp.Open();
+                }
+                catch (SocketException exc)
+                {
+                    if (current == this) current = null;
+                    tcp?.Close();
+                    udp?.Close();
+                    instructionHandler?.Deactivate();
+
+                    tcp = null;
+                    udp = null;
+                    instructionHandler = null;
+                    Connected = false;
+                    availableTcp = false;
+
+                    Destroy(gameObject);
+                    Logging.LogCritical($"SocketException: {exc}");
+                }
             }
         }
 
@@ -96,7 +97,7 @@ namespace Networking.Client
             lock (executionLock)
             {
                 // check if client is not already closed
-                if (!Connected || Deleted) { Logging.LogError("Disconnecting was turned down: socket is already closed."); return; }
+                if (!Connected || Deleted || !availableTcp) { Logging.LogError("Disconnecting was turned down: socket is already closed."); return; }
                 Connected = false;
 
                 // invoke event before disconnecting
@@ -136,45 +137,7 @@ namespace Networking.Client
             }
         }
 
-        public void EndSession()    // disconnects, checks for pending instructions and waits (if needed) for client to be deleted.
-        {
-            lock (executionLock)
-            {
-                if (Deleted) return;
 
-                // disconnect, if possible
-                Disconnect();
-
-                // execute gotten instructions
-                Tuple<short, byte[]> inst = null;
-                while (inst?.Item1 != (short)Instructions.Disconnect)
-                {
-                    if (availableTcp)
-                    {
-                        inst = instructionHandler.WaitForInstruction();
-                        instructionHandler.Execute(inst);
-                    }
-                    else
-                    {
-                        instructionHandler.ExecuteAllBuffered();
-                        break;
-                    }
-                }
-
-
-
-                Delete();
-            }
-        }
-
-        public void CheckIfValid()
-        {
-            lock (executionLock)
-            {
-                if (Valid) return;
-                else EndSession();
-            }
-        }
 
 
         #endregion
@@ -206,7 +169,7 @@ namespace Networking.Client
             if (availableUdp) udp.Send(Instructions.HelloWorld, Bytes.ToBytes($"{i++}"));
             instructionHandler?.ExecuteAllBuffered();
 
-            CheckIfValid();
+            lock (executionLock) if (!availableTcp) { instructionHandler.ExecuteAllBuffered(); Delete(); }
         }
         int i = 0;
 
@@ -215,8 +178,23 @@ namespace Networking.Client
         protected override void AfterUdpInvolved() { }
 
 
-        protected void OnApplicationQuit() => EndSession();
+        protected void OnApplicationQuit()
+        {
+            lock (executionLock)
+            {
+                Disconnect();
 
+                Tuple<short, byte[]> instruction = null;
+                while(availableTcp)
+                {
+                    instruction = instructionHandler?.WaitForInstruction();
+                    if (instruction == null || instructionHandler == null) break;
+                    instructionHandler.Execute(instruction);
+                }
+                instructionHandler?.ExecuteAllBuffered();
+                Delete();
+            }
+        }
 
 
         #endregion
@@ -241,6 +219,15 @@ namespace Networking.Client
         }
 
 
+        [Instruction(Instructions.NotifyShutdown)]
+        private void instNotifyShutdown(byte[] data)       // testing function 
+        {
+            if (data != null && data.Length > 0) Logging.LogInfo($"Server is going to be shut down. Reason: {Bytes.ToString(data)}");
+            else Logging.LogInfo("Server is going to be shut down. Reason: unknown");
+        }
+
+
+
         [Instruction(Instructions.Disconnect)]
         private void instDisconnect(byte[] data)        // disconnect 
         {
@@ -252,7 +239,8 @@ namespace Networking.Client
                     tcp.Send(Instructions.Disconnect, new byte[] { 1 });
                     break;
                 case 1:
-                    tcp.Send(Instructions.Disconnect, new byte[] { 1 });
+                    tcp.Send(Instructions.Disconnect, new byte[] { 1 }).Wait();
+                    Delete();
                     break;
             }
         }
@@ -291,10 +279,9 @@ namespace Networking.Client
 
 
         private bool Connected = false;
+        private bool Deleted = false;
         private bool availableUdp = false;
         private bool availableTcp = false;
-        private bool Deleted = false;
-        private bool Valid = false;
 
 
 
@@ -315,8 +302,6 @@ namespace Networking.Client
                 id = (short)instructionId;
             }
         }
-
-        public object executionLock { get; private set; }
 
 
 

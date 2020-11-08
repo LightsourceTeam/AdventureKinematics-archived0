@@ -3,7 +3,7 @@ using System.Net;
 using System;
 using SourceExtensions;
 using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 
 
 namespace Networking
@@ -46,7 +46,7 @@ namespace Networking
             this.handleDataCallback = handleDataCallback;
         }
 
-        public void Send(Instructions instructionId, byte[] data = null, AsyncCallback endCallback = null) // sends an instruction 
+        public Task Send(Instructions instructionId, byte[] data = null, AsyncCallback endCallback = null) // sends an instruction 
         {
             byte[] dataToSend;
 
@@ -55,11 +55,13 @@ namespace Networking
                 if (data != null && data.Length > 0) dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(data.Length), data);
                 else dataToSend = Bytes.Combine(Bytes.ToBytes((short)instructionId), Bytes.ToBytes(0));
 
-                if (isConnected) client.BeginSend(dataToSend, dataToSend.Length, endCallback, null); 
-                else client.BeginSend(dataToSend, dataToSend.Length, endPoint, endCallback, null);
+                if (isConnected) return client.SendAsync(dataToSend, dataToSend.Length); 
+                else return client.SendAsync(dataToSend, dataToSend.Length, endPoint);
             }
             catch (IOException) { Logging.LogError("Failed to send data!"); }
             catch (ObjectDisposedException) { Logging.LogError("Failed to send data! Socket is closed."); }
+
+            return null;
         }
 
         public void Open(IPEndPoint remoteEndPoint) 
